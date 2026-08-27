@@ -29,13 +29,13 @@ app.get("/health", (_req, res) => {
   res.status(200).json({
     status: "healthy",
     timestamp: new Date().toISOString(),
-    service: "Meetup Real-Time WebRTC Backend",
+    service: "VIVA Real-Time WebRTC Backend",
   });
 });
 
 app.get("/", (_req, res) => {
   res.status(200).json({
-    name: "Meetup Video Conferencing API",
+    name: "VIVA Video Conferencing API",
     version: "1.0.0",
     docs: "/api/meetings",
   });
@@ -61,7 +61,7 @@ const startServer = async () => {
   await initDB();
 
   server.listen(PORT, () => {
-    console.log(`🚀 Meetup Backend Server running on http://localhost:${PORT}`);
+    console.log(`🚀 VIVA Backend Server running on http://localhost:${PORT}`);
     console.log(`🔌 WebRTC Signaling Socket.io active on port ${PORT}`);
     console.log(`🌐 Allowed Frontend Origin: ${CLIENT_URL}`);
   });
