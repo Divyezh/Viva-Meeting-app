@@ -36,3 +36,14 @@ export const saveCreatedMeeting = (meeting: Partial<Meeting> & { id: string; tit
     console.error("Failed to save created meeting:", err);
   }
 };
+
+export const deleteSavedMeeting = (meetingId: string): void => {
+  try {
+    const existing = getSavedMeetings();
+    const updated = existing.filter((m) => m.id !== meetingId);
+    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.error("Failed to delete saved meeting:", err);
+  }
+};
+

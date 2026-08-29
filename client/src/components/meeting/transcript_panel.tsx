@@ -116,15 +116,15 @@ const TranscriptPanel = ({
   );
 
   return (
-    <aside className="flex h-full w-full flex-col bg-[#0b160d]/95 backdrop-blur-2xl border-l border-emerald-900/40 text-slate-100 shadow-2xl">
+    <aside className="flex h-full w-full flex-col bg-[#0e1217] border-l border-zinc-800/90 text-zinc-100 shadow-2xl">
       {/* ─── Panel Top Header ─── */}
-      <div className="flex items-center justify-between border-b border-emerald-900/30 px-5 py-3.5">
+      <div className="flex items-center justify-between border-b border-zinc-900/80 px-5 py-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold tracking-tight text-white capitalize">
+          <h2 className="text-xs font-bold tracking-wider text-zinc-300 uppercase">
             {activeTab === "participants" ? "People in Call" : activeTab}
           </h2>
           {activeTab === "participants" && (
-            <span className="rounded-full bg-emerald-950 px-2 py-0.5 text-[11px] font-bold text-emerald-300 border border-emerald-800/40">
+            <span className="rounded-full bg-zinc-900 border border-zinc-850 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
               {participants.length}
             </span>
           )}
@@ -133,16 +133,16 @@ const TranscriptPanel = ({
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopyInvite}
-            className="flex items-center gap-1.5 rounded-full bg-emerald-950/80 border border-emerald-800/50 px-2.5 py-1 text-[11px] font-medium text-emerald-200 hover:bg-emerald-900/50 hover:text-white"
+            className="flex items-center gap-1.5 rounded-xl bg-zinc-900 border border-zinc-800 px-2.5 py-1 text-[10px] font-bold text-zinc-300 hover:text-white hover:bg-zinc-850 transition-all active:scale-95"
             title="Invite more people"
           >
-            <UserPlus className="h-3 w-3" />
-            <span className="hidden sm:inline">Invite</span>
+            <UserPlus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Invite Link</span>
           </button>
 
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-emerald-400/80 hover:bg-emerald-900/40 hover:text-white transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-xl border border-zinc-850 bg-zinc-900 text-zinc-400 hover:bg-zinc-850 hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -150,14 +150,14 @@ const TranscriptPanel = ({
       </div>
 
       {/* ─── Tab Segment Controls ─── */}
-      <div className="flex border-b border-emerald-900/30 bg-[#08120a]/60 px-3 py-2">
-        <div className="grid w-full grid-cols-4 gap-1 rounded-2xl bg-[#0a170d] p-1 border border-emerald-900/40">
+      <div className="flex border-b border-zinc-900/80 bg-zinc-950 px-3 py-2.5">
+        <div className="grid w-full grid-cols-4 gap-1 rounded-2xl bg-zinc-900/40 p-1 border border-zinc-850/80">
           <button
             onClick={() => setActiveTab("chat")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
               activeTab === "chat"
-                ? "bg-[#3f6212] text-white shadow-xs"
-                : "text-emerald-300/70 hover:text-white"
+                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5" />
@@ -166,22 +166,22 @@ const TranscriptPanel = ({
 
           <button
             onClick={() => setActiveTab("participants")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
               activeTab === "participants"
-                ? "bg-[#3f6212] text-white shadow-xs"
-                : "text-emerald-300/70 hover:text-white"
+                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <Users className="h-3.5 w-3.5" />
-            <span>People ({participants.length})</span>
+            <span>People</span>
           </button>
 
           <button
             onClick={() => setActiveTab("transcript")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
               activeTab === "transcript"
-                ? "bg-[#3f6212] text-white shadow-xs"
-                : "text-emerald-300/70 hover:text-white"
+                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
@@ -190,10 +190,10 @@ const TranscriptPanel = ({
 
           <button
             onClick={() => setActiveTab("notes")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
               activeTab === "notes"
-                ? "bg-[#3f6212] text-white shadow-xs"
-                : "text-emerald-300/70 hover:text-white"
+                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             <Sparkles className="h-3.5 w-3.5" />
@@ -203,26 +203,54 @@ const TranscriptPanel = ({
       </div>
 
       {/* ─── Scrollable Tab Content ─── */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* ─── 1. PARTICIPANTS TAB ─── */}
         {activeTab === "participants" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-emerald-300/80 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
                 In this meeting ({filteredParticipants.length})
               </span>
             </div>
 
             {/* Search Input */}
-            <div className="flex items-center gap-2 rounded-2xl bg-[#08120a] border border-emerald-900/60 px-3 py-2 text-xs">
-              <Search className="h-3.5 w-3.5 text-emerald-500/70 shrink-0" />
+            <div className="flex items-center gap-2 rounded-xl bg-zinc-950 border border-zinc-850 px-3 py-2 text-xs">
+              <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
               <input
                 type="text"
                 placeholder="Search participants..."
                 value={participantSearch}
                 onChange={(e) => setParticipantSearch(e.target.value)}
-                className="w-full bg-transparent text-white placeholder-emerald-500/50 outline-none text-xs"
+                className="w-full bg-transparent text-white placeholder-zinc-500 outline-none text-xs"
               />
+            </div>
+
+            {/* Direct Meeting Share Link Card */}
+            <div className="rounded-2xl bg-zinc-900/30 border border-zinc-850/80 p-4 shadow-sm relative overflow-hidden">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-emerald-500/3 blur-lg" />
+              <div className="relative z-10">
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                  <Sparkles className="h-3 w-3" />
+                  Direct Invite Link
+                </span>
+                <p className="text-[11px] text-zinc-300/80 mb-3">
+                  Invite others to join this room directly by sharing this link:
+                </p>
+                <div className="flex items-center gap-1.5 rounded-xl bg-zinc-950 border border-zinc-850 px-2 py-1.5">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${window.location.origin}/meeting/${roomId}`}
+                    className="w-full bg-transparent font-mono text-[10px] text-emerald-400 outline-none select-all cursor-text"
+                  />
+                  <button
+                    onClick={handleCopyInvite}
+                    className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-[10px] font-bold text-zinc-250 transition-all hover:bg-zinc-750 hover:text-white active:scale-95 shrink-0"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Participants List Items */}
@@ -230,7 +258,7 @@ const TranscriptPanel = ({
               {filteredParticipants.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between rounded-2xl bg-[#0e1d10]/70 border border-emerald-900/30 p-3 transition-colors hover:border-emerald-700/40"
+                  className="flex items-center justify-between rounded-xl bg-zinc-900/20 border border-zinc-850 p-3 transition-colors hover:border-zinc-800"
                 >
                   <div className="flex items-center gap-2.5">
                     <div className="relative">
@@ -238,15 +266,15 @@ const TranscriptPanel = ({
                         <img
                           src={p.avatar}
                           alt={p.name}
-                          className="h-8 w-8 rounded-full object-cover border border-emerald-600/40"
+                          className="h-8 w-8 rounded-full object-cover border border-zinc-800"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-900 text-xs font-bold text-emerald-200 border border-emerald-600/40">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-zinc-300 border border-zinc-800">
                           {getInitials(p.name)}
                         </div>
                       )}
                       <span
-                        className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0e1d10] ${
+                        className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0e1217] ${
                           p.isMuted ? "bg-red-500" : "bg-emerald-400"
                         }`}
                       />
@@ -261,7 +289,7 @@ const TranscriptPanel = ({
                           <span className="text-[10px] text-emerald-400 font-medium">(You)</span>
                         )}
                       </div>
-                      <span className="text-[10px] text-emerald-300/60 font-medium capitalize">
+                      <span className="text-[10px] text-zinc-400 font-medium capitalize">
                         {p.role}
                       </span>
                     </div>
@@ -270,21 +298,21 @@ const TranscriptPanel = ({
                   {/* Device Status Icons */}
                   <div className="flex items-center gap-1.5">
                     <div
-                      className={`flex h-7 w-7 items-center justify-center rounded-full ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-xl border transition-colors ${
                         p.isMuted
-                          ? "bg-red-500/20 text-red-400 border border-red-500/40"
-                          : "bg-emerald-950 text-emerald-300 border border-emerald-800/40"
+                          ? "bg-red-500/10 text-red-400 border-red-500/20"
+                          : "bg-zinc-900 text-zinc-400 border-zinc-800"
                       }`}
                       title={p.isMuted ? "Muted" : "Microphone active"}
                     >
-                      {p.isMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5 text-[#84cc16]" />}
+                      {p.isMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5 text-emerald-400" />}
                     </div>
 
                     <div
-                      className={`flex h-7 w-7 items-center justify-center rounded-full ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-xl border transition-colors ${
                         p.isCameraOff
-                          ? "bg-red-500/20 text-red-400 border border-red-500/40"
-                          : "bg-emerald-950 text-emerald-300 border border-emerald-800/40"
+                          ? "bg-red-500/10 text-red-400 border-red-500/20"
+                          : "bg-zinc-900 text-zinc-400 border-zinc-800"
                       }`}
                       title={p.isCameraOff ? "Camera Off" : "Camera On"}
                     >
@@ -302,7 +330,7 @@ const TranscriptPanel = ({
           <div className="flex h-full flex-col justify-between space-y-3">
             <div className="space-y-3">
               {messages.length === 0 ? (
-                <div className="py-12 text-center text-xs text-emerald-300/60">
+                <div className="py-12 text-center text-xs text-zinc-500">
                   No messages yet. Send a message to participants in this room! 💬
                 </div>
               ) : (
@@ -314,10 +342,10 @@ const TranscriptPanel = ({
                       className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
                     >
                       <div className="mb-1 flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-emerald-200">
+                        <span className="text-[10px] font-semibold text-zinc-300">
                           {isOwn ? "You" : msg.senderName}
                         </span>
-                        <span className="text-[10px] text-emerald-400/50">
+                        <span className="text-[9px] text-zinc-500">
                           {new Date(msg.createdAt).toLocaleTimeString("en-US", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -326,10 +354,10 @@ const TranscriptPanel = ({
                         </span>
                       </div>
                       <div
-                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-sm ${
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm border ${
                           isOwn
-                            ? "rounded-br-xs bg-[#3f6212] text-white"
-                            : "rounded-bl-xs bg-[#122415] text-emerald-100 border border-emerald-800/40"
+                            ? "rounded-br-xs bg-zinc-850 border-zinc-700 text-white"
+                            : "rounded-bl-xs bg-zinc-900/50 border-zinc-850 text-zinc-200"
                         }`}
                       >
                         {msg.message}
@@ -345,12 +373,12 @@ const TranscriptPanel = ({
         {/* ─── 3. SUMMARY TAB ─── */}
         {activeTab === "transcript" && (
           <div className="space-y-3">
-            <div className="rounded-2xl bg-[#0e1d10]/80 border border-emerald-900/40 p-4">
+            <div className="rounded-2xl bg-zinc-900/40 border border-zinc-850/80 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-[#84cc16]" />
+                <FileText className="h-4 w-4 text-emerald-400" />
                 <h3 className="text-xs font-bold text-white">Live Call Status</h3>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-zinc-400 leading-relaxed">
                 Native WebRTC peer mesh active. Video streams, audio tracks, and real-time messages are encrypted and streamed directly between connected browsers.
               </p>
             </div>
@@ -360,15 +388,15 @@ const TranscriptPanel = ({
         {/* ─── 4. NOTES TAB ─── */}
         {activeTab === "notes" && (
           <div className="space-y-4">
-            <div className="rounded-2xl bg-emerald-950/60 border border-emerald-800/40 p-3.5">
-              <div className="mb-2 flex items-center gap-2 text-xs font-bold text-white">
-                <Sparkles className="h-4 w-4 text-[#84cc16]" />
+            <div className="rounded-2xl bg-zinc-900/40 border border-zinc-850 p-4">
+              <div className="mb-3 flex items-center gap-2 text-xs font-bold text-white">
+                <Sparkles className="h-4 w-4 text-emerald-400" />
                 Session Notes
               </div>
-              <ul className="space-y-2 text-xs text-slate-300">
+              <ul className="space-y-2 text-xs text-zinc-400">
                 {notes.map((note, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#84cc16]" />
+                  <li key={index} className="flex items-start gap-2 leading-relaxed">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
                     <span>{note}</span>
                   </li>
                 ))}
@@ -383,11 +411,11 @@ const TranscriptPanel = ({
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddNote()}
-                className="flex-1 rounded-full bg-[#08120a] border border-emerald-900/60 px-3.5 py-2 text-xs text-white placeholder-emerald-400/40 outline-none focus:border-[#84cc16]"
+                className="flex-1 rounded-xl bg-zinc-950 border border-zinc-850 px-3.5 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-700"
               />
               <button
                 onClick={handleAddNote}
-                className="rounded-full bg-[#3f6212] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#365314]"
+                className="rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 hover:text-white"
               >
                 Add
               </button>
@@ -398,7 +426,7 @@ const TranscriptPanel = ({
 
       {/* ─── Bottom Chat Input (When on Chat tab) ─── */}
       {activeTab === "chat" && (
-        <div className="border-t border-emerald-900/40 bg-[#08120a]/80 p-3">
+        <div className="border-t border-zinc-900/80 bg-zinc-950/85 p-3">
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -406,15 +434,15 @@ const TranscriptPanel = ({
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-              className="flex-1 rounded-full bg-[#122415] border border-emerald-800/40 px-4 py-2.5 text-xs text-white placeholder-emerald-400/40 outline-none focus:border-[#84cc16] focus:ring-1 focus:ring-[#84cc16]/40"
+              className="flex-1 rounded-xl bg-zinc-900 border border-zinc-850 px-4 py-2.5 text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-750 focus:ring-1 focus:ring-zinc-800/40"
             />
             <button
               onClick={handleSendChat}
               disabled={!chatInput.trim()}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all ${
+              className={`flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-xl transition-all ${
                 chatInput.trim()
-                  ? "bg-[#3f6212] text-white hover:bg-[#365314] active:scale-95 shadow-md shadow-lime-950/40"
-                  : "bg-emerald-950 text-emerald-700 cursor-not-allowed"
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-zinc-950 active:scale-95 shadow-md"
+                  : "bg-zinc-900 text-zinc-600 border border-zinc-850 cursor-not-allowed"
               }`}
             >
               <Send className="h-3.5 w-3.5" />

@@ -231,3 +231,57 @@ export const getSessionDetail = async (req: AuthRequest, res: Response): Promise
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// ─── DELETE /api/meetings/sessions/:id ──────────────────────
+export const deleteSession = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) as string;
+    const userId = req.user?.id || "user_1";
+    const pool = getPool();
+
+    if (pool) {
+      const meetingRes = await pool.query("SELECT * FROM meetings WHERE id = $1", [id]);
+      if (meetingRes.rows.length === 0) {
+        res.status(404).json({ success: false, message: "Meeting session not found" });
+        return;
+      }
+
+      const meeting = meetingRes.rows[0];
+      if (meeting.host_id === userId) {
+        await pool.query("DELETE FROM meetings WHERE id = $1", [id]);
+      } else {
+        await pool.query("DELETE FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2", [id, userId]);
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Meeting session deleted successfully",
+      });
+      return;
+    }
+
+    const meeting = memoryMeetings.get(id);
+    if (!meeting) {
+      res.status(404).json({ success: false, message: "Meeting session not found" });
+      return;
+    }
+
+    if (meeting.hostId === userId) {
+      memoryMeetings.delete(id);
+      memoryParticipants.delete(id);
+      memoryMessages.delete(id);
+    } else {
+      const parts = memoryParticipants.get(id) || [];
+      const updatedParts = parts.filter((p) => p.userId !== userId);
+      memoryParticipants.set(id, updatedParts);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Meeting session deleted successfully",
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

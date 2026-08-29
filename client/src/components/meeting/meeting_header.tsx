@@ -141,19 +141,20 @@ const MeetingHeader = ({
       <div className="flex items-center gap-2.5">
         <button
           onClick={handleCopyLink}
-          className="flex items-center gap-2 rounded-full bg-emerald-950/70 border border-emerald-800/60 px-3.5 py-1.5 text-xs font-semibold text-emerald-200 transition-all hover:bg-emerald-900/60 hover:text-white hover:border-lime-500/50 active:scale-95 shadow-sm"
+          className="flex items-center gap-2 rounded-full bg-emerald-950/70 border border-emerald-800/60 px-3.5 py-1.5 text-xs font-semibold text-emerald-200 transition-all hover:bg-[#3f6212] hover:text-white hover:border-lime-500/50 active:scale-95 shadow-sm"
           title="Copy meeting link to share with others"
         >
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 text-lime-400" />
-              <span className="text-lime-300">ID Copied!</span>
+              <span className="text-lime-300">Link Copied!</span>
             </>
           ) : (
             <>
               <Copy className="h-3.5 w-3.5 text-[#84cc16]" />
-              <span className="font-mono text-[11px] text-emerald-100">{roomId}</span>
-              <span className="hidden sm:inline-block text-[11px] text-emerald-400/80">· Copy</span>
+              <span className="font-mono text-[11px] text-emerald-100 hidden sm:inline-block">{roomId}</span>
+              <span className="text-[11px] text-emerald-400/80 hidden sm:inline-block">· Copy Link</span>
+              <span className="inline-block sm:hidden text-[11px]">Copy Link</span>
             </>
           )}
         </button>

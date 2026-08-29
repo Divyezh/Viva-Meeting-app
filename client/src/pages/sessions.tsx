@@ -1,18 +1,64 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, History, Users, MessageSquare, Calendar, Plus } from "lucide-react";
+import { ArrowLeft, History, Users, MessageSquare, Calendar, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getSavedMeetings } from "../utils/session_storage";
+import toast, { Toaster } from "react-hot-toast";
+import { getSavedMeetings, deleteSavedMeeting } from "../utils/session_storage";
 import NewMeetingModal from "../components/meeting/new_meeting_modal";
 import SessionDetailModal from "../components/sessions/session_detail_modal";
 import type { Meeting, SessionDetail } from "../types";
+import api from "../config/api";
 
 const Sessions = () => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Meeting[]>([]);
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchSessions = async () => {
+    setIsLoading(true);
+    // 1. Get from localStorage as baseline immediately
+    const local = getSavedMeetings();
+    setSessions(local);
+
+    // 2. Fetch from backend database (if online/authenticated) and merge
+    try {
+      const response = await api.get("/sessions");
+      if (response.data && response.data.success) {
+        const dbSessions: Meeting[] = response.data.data.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          hostId: item.host_id,
+          status: item.status,
+          createdAt: item.created_at,
+          endedAt: item.ended_at,
+          participantCount: parseInt(item.participant_count, 10) || 1,
+          duration: item.duration || (item.status === "active" ? "Active" : "Ended"),
+        }));
+
+        // Merge, prioritizing database sessions
+        const merged = [...dbSessions];
+        local.forEach((loc) => {
+          if (!merged.some((m) => m.id === loc.id)) {
+            merged.push(loc);
+          }
+        });
+
+        // Sort by creation date descending
+        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        // Sync local storage with merged truth
+        localStorage.setItem("viva_meeting_sessions", JSON.stringify(merged));
+        setSessions(merged);
+      }
+    } catch (err) {
+      console.warn("Failed to synchronize with meeting server, showing offline storage:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setSessions(getSavedMeetings());
+    fetchSessions();
   }, []);
 
   const formatDate = (dateStr: string) => {
@@ -29,6 +75,25 @@ const Sessions = () => {
       minute: "2-digit",
       hour12: true,
     });
+  };
+
+  const handleDelete = async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const loadingToast = toast.loading("Deleting meeting session...");
+
+    try {
+      // 1. Delete on backend
+      await api.delete(`/sessions/${sessionId}`);
+    } catch (err) {
+      console.warn("Failed to delete session on server (local-only session):", err);
+    }
+
+    // 2. Delete on client (localStorage)
+    deleteSavedMeeting(sessionId);
+
+    // 3. Update view
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    toast.success("Meeting session deleted successfully", { id: loadingToast });
   };
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId) || sessions[0] || null;
@@ -52,12 +117,14 @@ const Sessions = () => {
 
   return (
     <div className="w-full py-8 md:py-12">
+      <Toaster position="top-center" />
+
       {/* New Meeting Modal */}
       <NewMeetingModal
         isOpen={isNewMeetingModalOpen}
         onClose={() => {
           setIsNewMeetingModalOpen(false);
-          setSessions(getSavedMeetings());
+          fetchSessions();
         }}
       />
 
@@ -98,18 +165,22 @@ const Sessions = () => {
               <History className="h-8 w-8" />
             </div>
             <h3 className="mb-1 text-base font-bold text-slate-900">
-              No sessions recorded yet
+              {isLoading ? "Synchronizing sessions..." : "No sessions recorded yet"}
             </h3>
             <p className="max-w-xs text-xs text-slate-400 mb-6">
-              Your meeting history will appear here once you host or join your first video call.
+              {isLoading
+                ? "Checking server database for your meetings history..."
+                : "Your meeting history will appear here once you host or join your first video call."}
             </p>
-            <button
-              onClick={() => setIsNewMeetingModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-[#3f6212] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#365314] active:scale-95 transition-all"
-            >
-              <Plus className="h-4 w-4" />
-              Start a New Meeting
-            </button>
+            {!isLoading && (
+              <button
+                onClick={() => setIsNewMeetingModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-[#3f6212] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#365314] active:scale-95 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+                Start a New Meeting
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -120,6 +191,7 @@ const Sessions = () => {
                 formatDate={formatDate}
                 formatTime={formatTime}
                 onViewDetails={() => setSelectedSessionId(session.id)}
+                onDelete={(e) => handleDelete(session.id, e)}
               />
             ))}
           </div>
@@ -144,6 +216,7 @@ interface SessionCardProps {
   formatDate: (d: string) => string;
   formatTime: (d: string) => string;
   onViewDetails: () => void;
+  onDelete: (e: React.MouseEvent) => void;
 }
 
 const SessionCard = ({
@@ -151,6 +224,7 @@ const SessionCard = ({
   formatDate,
   formatTime,
   onViewDetails,
+  onDelete,
 }: SessionCardProps) => {
   const shortId = session.id.split("-").slice(0, 3).join("-").slice(0, 11);
 
@@ -200,13 +274,22 @@ const SessionCard = ({
         </div>
       </div>
 
-      {/* Full-width View Details button */}
-      <button
-        onClick={onViewDetails}
-        className="w-full rounded-full bg-emerald-50/80 border border-emerald-100/60 py-2.5 text-xs font-semibold text-slate-700 transition-all hover:bg-[#3f6212] hover:text-white active:scale-95"
-      >
-        View Details
-      </button>
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 mt-2">
+        <button
+          onClick={onViewDetails}
+          className="flex-1 rounded-full bg-emerald-50/80 border border-emerald-100/60 py-2.5 text-xs font-semibold text-slate-700 transition-all hover:bg-[#3f6212] hover:text-white active:scale-95"
+        >
+          View Details
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex h-9.5 w-9.5 items-center justify-center rounded-full bg-red-50 border border-red-100 text-red-600 transition-all hover:bg-red-600 hover:text-white active:scale-95"
+          title="Delete Session"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 };

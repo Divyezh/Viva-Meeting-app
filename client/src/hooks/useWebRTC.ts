@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import socket from "../config/socket";
 import type { PeerStream, ChatMessage } from "../types";
+import soundEffects from "../utils/soundEffects";
 
 interface UseWebRTCProps {
   roomId: string;
@@ -21,6 +22,23 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
   ],
+};
+
+/**
+ * Optimizes WebRTC Session Description Protocol (SDP) for Opus audio codec.
+ * Forces 128kbps stereo high-fidelity voice transmission with In-Band FEC
+ * (Forward Error Correction) to ensure crystal-clear mic voice with 0 packet loss distortion.
+ */
+export const optimizeSdpForVoice = (sdp?: string): string => {
+  if (!sdp) return "";
+  return sdp.replace(/(a=fmtp:\d+\s+)([^\r\n]+)/g, (match, prefix, params) => {
+    let updated = params;
+    if (!updated.includes("stereo=")) updated += ";stereo=1;sprop-stereo=1";
+    if (!updated.includes("maxaveragebitrate=")) updated += ";maxaveragebitrate=128000";
+    if (!updated.includes("cbr=")) updated += ";cbr=1";
+    if (!updated.includes("useinbandfec=")) updated += ";useinbandfec=1";
+    return `${prefix}${updated}`;
+  });
 };
 
 export const useWebRTC = ({
@@ -44,6 +62,7 @@ export const useWebRTC = ({
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const remoteAnalysers = useRef<Map<string, { ctx: AudioContext; animId: number }>>(new Map());
 
   // Helper to add or update peer stream
   const setPeerStream = useCallback(
@@ -79,11 +98,70 @@ export const useWebRTC = ({
           return [...prev, updatedPeer];
         }
       });
+
+      // Attach audio speech level analysis to remote stream
+      if (stream && stream.getAudioTracks().length > 0) {
+        setupRemoteSpeakingDetection(socketId, stream);
+      }
     },
     []
   );
 
-  // ─── 1. Initialize Local Media Stream ───────────────────────
+  // ─── Remote Speaking Detection Engine ────────────────────────
+  const setupRemoteSpeakingDetection = (socketId: string, stream: MediaStream) => {
+    // Clean existing if re-attaching
+    const existing = remoteAnalysers.current.get(socketId);
+    if (existing) {
+      cancelAnimationFrame(existing.animId);
+      existing.ctx.close().catch(() => {});
+      remoteAnalysers.current.delete(socketId);
+    }
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 128;
+      source.connect(analyser);
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      let animId: number;
+      let isSpeakingState = false;
+      let lastUpdate = 0;
+
+      const checkRemoteAudio = () => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i];
+        }
+        const avg = sum / bufferLength;
+        const speakingNow = avg > 16;
+        const now = Date.now();
+
+        if (speakingNow !== isSpeakingState && now - lastUpdate > 200) {
+          isSpeakingState = speakingNow;
+          lastUpdate = now;
+          setPeers((prev) =>
+            prev.map((p) => (p.peerId === socketId ? { ...p, isSpeaking: speakingNow } : p))
+          );
+        }
+
+        animId = requestAnimationFrame(checkRemoteAudio);
+      };
+
+      animId = requestAnimationFrame(checkRemoteAudio);
+      remoteAnalysers.current.set(socketId, { ctx, animId });
+    } catch (err) {
+      console.debug("Remote audio analysis notice:", err);
+    }
+  };
+
+  // ─── 1. Initialize Local Media Stream (Studio Mic Constraints) ──
   useEffect(() => {
     if (!enabled) return;
 
@@ -91,14 +169,35 @@ export const useWebRTC = ({
 
     const startLocalMedia = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: "user",
-          },
-          audio: true,
-        });
+        let stream: MediaStream;
+
+        try {
+          // Attempt Studio Crystal-Clear Microphone Settings (48kHz, Stereo, Noise & Echo cancellation)
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: "user",
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 48000,
+              channelCount: 2,
+            },
+          });
+        } catch (studioConstraintErr) {
+          console.warn("Studio constraints fallback to default mic:", studioConstraintErr);
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: "user",
+            },
+            audio: true,
+          });
+        }
 
         activeStream = stream;
         localStreamRef.current = stream;
@@ -123,7 +222,10 @@ export const useWebRTC = ({
           isHost,
         });
 
-        // Initialize Web Audio level detection for local user
+        // Howler sound cue on entering room
+        soundEffects.playJoin();
+
+        // Initialize Web Audio level detection for local user speaking border
         try {
           const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
           if (AudioContextClass) {
@@ -178,6 +280,7 @@ export const useWebRTC = ({
           avatarUrl: currentUser.avatarUrl || "",
           isMuted: true,
           isCameraOff: true,
+          isHost,
         });
       }
     };
@@ -191,8 +294,13 @@ export const useWebRTC = ({
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(() => {});
       }
+      remoteAnalysers.current.forEach((item) => {
+        cancelAnimationFrame(item.animId);
+        item.ctx.close().catch(() => {});
+      });
+      remoteAnalysers.current.clear();
     };
-  }, [roomId, currentUser.userId, currentUser.userName, currentUser.avatarUrl, enabled, isHost]);
+  }, [roomId, currentUser.userId, currentUser.userName, currentUser.avatarUrl, enabled, isHost, initialMuted, initialCameraOff]);
 
   // ─── 2. WebRTC Peer Connection Factory ──────────────────────
   const createPeerConnection = useCallback(
@@ -231,6 +339,12 @@ export const useWebRTC = ({
       // Handle connection state changes
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === "disconnected" || pc.connectionState === "failed" || pc.connectionState === "closed") {
+          const analyser = remoteAnalysers.current.get(targetSocketId);
+          if (analyser) {
+            cancelAnimationFrame(analyser.animId);
+            analyser.ctx.close().catch(() => {});
+            remoteAnalysers.current.delete(targetSocketId);
+          }
           peerConnections.current.delete(targetSocketId);
           setPeers((prev) => prev.filter((p) => p.peerId !== targetSocketId));
         }
@@ -251,11 +365,14 @@ export const useWebRTC = ({
 
         try {
           const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
+          // Apply Opus 128kbps crystal-clear voice SDP optimization
+          const optimizedSdp = optimizeSdpForVoice(offer.sdp);
+          const finalOffer = new RTCSessionDescription({ type: offer.type, sdp: optimizedSdp });
+          await pc.setLocalDescription(finalOffer);
 
           socket.emit("webrtc-offer", {
             targetSocketId: user.socketId,
-            offer,
+            offer: finalOffer,
             callerInfo: {
               userId: currentUser.userId,
               userName: currentUser.userName,
@@ -273,6 +390,8 @@ export const useWebRTC = ({
     // B. A new user joined the room
     const handleUserJoined = (newUser: any) => {
       setPeerStream(newUser.socketId, null, newUser);
+      // Play pleasant Howler join chime
+      soundEffects.playJoin();
     };
 
     // C. Incoming WebRTC Offer -> send Answer back
@@ -291,11 +410,14 @@ export const useWebRTC = ({
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+        // Apply Opus 128kbps crystal-clear voice SDP optimization
+        const optimizedSdp = optimizeSdpForVoice(answer.sdp);
+        const finalAnswer = new RTCSessionDescription({ type: answer.type, sdp: optimizedSdp });
+        await pc.setLocalDescription(finalAnswer);
 
         socket.emit("webrtc-answer", {
           targetSocketId: callerSocketId,
-          answer,
+          answer: finalAnswer,
         });
       } catch (err) {
         console.error("Error handling WebRTC offer:", err);
@@ -365,21 +487,35 @@ export const useWebRTC = ({
 
     // G. Remote Peer Disconnected
     const handleUserDisconnected = ({ socketId }: { socketId: string }) => {
+      const analyser = remoteAnalysers.current.get(socketId);
+      if (analyser) {
+        cancelAnimationFrame(analyser.animId);
+        analyser.ctx.close().catch(() => {});
+        remoteAnalysers.current.delete(socketId);
+      }
+
       const pc = peerConnections.current.get(socketId);
       if (pc) {
         pc.close();
         peerConnections.current.delete(socketId);
       }
       setPeers((prev) => prev.filter((p) => p.peerId !== socketId));
+
+      // Play pleasant Howler leave chime
+      soundEffects.playLeave();
     };
 
     // H. Real-Time Chat Message Broadcast
     const handleNewChatMessage = (msg: ChatMessage) => {
       setMessages((prev) => {
-        // Prevent duplicate messages if already present
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
+
+      // Play chat notification ping if message is from someone else
+      if (msg.userId !== currentUser.userId) {
+        soundEffects.playChatMessage();
+      }
     };
 
     socket.on("existing-users", handleExistingUsers);
@@ -412,6 +548,14 @@ export const useWebRTC = ({
           track.enabled = !nextState;
         });
       }
+
+      // Play audio cue for mic state change via Howler.js
+      if (nextState) {
+        soundEffects.playMicOff();
+      } else {
+        soundEffects.playMicOn();
+      }
+
       socket.emit("toggle-media", {
         roomId,
         isMuted: nextState,
@@ -449,44 +593,40 @@ export const useWebRTC = ({
       }
 
       if (localStreamRef.current) {
-        const videoTrack = localStreamRef.current.getVideoTracks()[0];
-        if (videoTrack) {
-          peerConnections.current.forEach((pc) => {
-            const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-            if (sender) {
-              sender.replaceTrack(videoTrack);
-            }
-          });
-        }
+        const camVideoTrack = localStreamRef.current.getVideoTracks()[0];
+        peerConnections.current.forEach((pc) => {
+          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+          if (sender && camVideoTrack) {
+            sender.replaceTrack(camVideoTrack);
+          }
+        });
       }
-
       setIsScreenSharing(false);
     } else {
       // Start Screen Share
       try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: true,
         });
 
-        const screenTrack = screenStream.getVideoTracks()[0];
-        screenTrackRef.current = screenTrack;
+        const displayVideoTrack = displayStream.getVideoTracks()[0];
+        screenTrackRef.current = displayVideoTrack;
 
-        // Replace video tracks on all active peer connections
-        peerConnections.current.forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-          if (sender) {
-            sender.replaceTrack(screenTrack);
-          }
-        });
-
-        screenTrack.onended = () => {
+        displayVideoTrack.onended = () => {
           toggleScreenShare();
         };
 
+        peerConnections.current.forEach((pc) => {
+          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+          if (sender) {
+            sender.replaceTrack(displayVideoTrack);
+          }
+        });
+
         setIsScreenSharing(true);
       } catch (err) {
-        console.warn("Screen sharing canceled or error:", err);
+        console.warn("Screen share cancelled or failed:", err);
       }
     }
   }, [isScreenSharing]);
@@ -494,7 +634,7 @@ export const useWebRTC = ({
   // ─── 7. User Actions: Send Chat Message ─────────────────────
   const sendMessage = useCallback(
     (text: string) => {
-      if (!text.trim()) return;
+      if (!text || !text.trim()) return;
 
       const newMsg: ChatMessage = {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -529,6 +669,12 @@ export const useWebRTC = ({
     peerConnections.current.forEach((pc) => pc.close());
     peerConnections.current.clear();
     setPeers([]);
+
+    remoteAnalysers.current.forEach((item) => {
+      cancelAnimationFrame(item.animId);
+      item.ctx.close().catch(() => {});
+    });
+    remoteAnalysers.current.clear();
   }, []);
 
   return {

@@ -15,6 +15,7 @@ import VideoGrid from "../components/meeting/video_grid";
 import MeetingHeader from "../components/meeting/meeting_header";
 import ControlBar from "../components/meeting/control_bar";
 import TranscriptPanel, { type ParticipantItem } from "../components/meeting/transcript_panel";
+import AudioSettingsModal from "../components/meeting/audio_settings_modal";
 import { useWebRTC } from "../hooks/useWebRTC";
 import socket from "../config/socket";
 import { useUser } from "@clerk/clerk-react";
@@ -66,6 +67,15 @@ const MeetingRoom = () => {
   // ─── Sidebar / Drawer State ─────────────────────────────────
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [activePanelTab, setActivePanelTab] = useState<"transcript" | "chat" | "notes" | "participants">("chat");
+  const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
+
+  // Pre-join audio and camera preferences
+  const initialMuted = useMemo(() => {
+    return localStorage.getItem("prejoin_muted") === "true";
+  }, []);
+  const initialCameraOff = useMemo(() => {
+    return localStorage.getItem("prejoin_camera_off") === "true";
+  }, []);
 
   // ─── Real-World WebRTC Peer Engine ──────────────────────────
   const {
@@ -88,6 +98,8 @@ const MeetingRoom = () => {
       userName: currentUserName,
       avatarUrl: currentUserAvatar,
     },
+    initialMuted,
+    initialCameraOff,
     enabled: admissionStatus === "admitted",
     isHost,
   });
@@ -459,6 +471,7 @@ const MeetingRoom = () => {
         isChatOpen={isPanelOpen && activePanelTab === "chat"}
         isTranscriptOpen={isPanelOpen && activePanelTab === "transcript"}
         isParticipantsOpen={isPanelOpen && activePanelTab === "participants"}
+        isAudioSettingsOpen={isAudioSettingsOpen}
         unreadCount={0}
         participantCount={participantsList.length}
         roomId={cleanRoomId}
@@ -469,7 +482,17 @@ const MeetingRoom = () => {
         onToggleChat={handleToggleChat}
         onToggleTranscript={handleToggleTranscript}
         onToggleParticipants={handleToggleParticipants}
+        onToggleAudioSettings={() => setIsAudioSettingsOpen((prev) => !prev)}
         onLeaveMeeting={handleLeave}
+      />
+
+      {/* ─── Audio & Crystal-Clear Mic Settings Modal (Powered by Howler.js) ─── */}
+      <AudioSettingsModal
+        isOpen={isAudioSettingsOpen}
+        onClose={() => setIsAudioSettingsOpen(false)}
+        localStream={localStream}
+        isMuted={isMuted}
+        onToggleMute={toggleMute}
       />
     </div>
   );

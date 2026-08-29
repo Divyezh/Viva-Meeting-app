@@ -11,6 +11,7 @@ import {
   Smile,
   MoreVertical,
   Circle,
+  Sliders,
 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -22,6 +23,7 @@ interface ControlBarProps {
   isChatOpen: boolean;
   isTranscriptOpen?: boolean;
   isParticipantsOpen: boolean;
+  isAudioSettingsOpen?: boolean;
   unreadCount: number;
   participantCount: number;
   roomId: string;
@@ -32,6 +34,7 @@ interface ControlBarProps {
   onToggleChat: () => void;
   onToggleTranscript?: () => void;
   onToggleParticipants: () => void;
+  onToggleAudioSettings?: () => void;
   onLeaveMeeting: () => void;
 }
 
@@ -42,6 +45,7 @@ const ControlBar = ({
   isChatOpen,
   isTranscriptOpen = true,
   isParticipantsOpen,
+  isAudioSettingsOpen = false,
   unreadCount,
   participantCount,
   onToggleMute,
@@ -50,6 +54,7 @@ const ControlBar = ({
   onToggleChat,
   onToggleTranscript,
   onToggleParticipants,
+  onToggleAudioSettings,
   onLeaveMeeting,
 }: ControlBarProps) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -244,7 +249,23 @@ const ControlBar = ({
           </span>
         </button>
 
-        {/* 10. More Options */}
+        {/* 10. Audio & Crystal-Clear Mic Settings */}
+        {onToggleAudioSettings && (
+          <button
+            onClick={onToggleAudioSettings}
+            className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
+              isAudioSettingsOpen
+                ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
+                : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
+            }`}
+            title="Audio & Crystal-Clear Mic Settings"
+          >
+            <Sliders className="h-4.5 w-4.5" />
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#84cc16] ring-2 ring-[#081307]" />
+          </button>
+        )}
+
+        {/* 11. More Options */}
         <button
           onClick={() => toast("Meeting encrypted with WebRTC DTLS-SRTP 🔐", {
             style: { background: "#081307", color: "#fff", border: "1px solid #365314", borderRadius: "9999px" },

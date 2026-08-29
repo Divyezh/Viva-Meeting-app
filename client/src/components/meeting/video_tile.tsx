@@ -23,12 +23,26 @@ const VideoTile = ({
   isScreenSharing = false,
 }: VideoTileProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (videoRef.current && stream && videoRef.current.srcObject !== stream) {
       videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
     }
   }, [stream]);
+
+  // Ensure remote participant voice plays reliably through dedicated audio element
+  useEffect(() => {
+    if (audioRef.current && stream && !isLocal) {
+      if (audioRef.current.srcObject !== stream) {
+        audioRef.current.srcObject = stream;
+        audioRef.current.play().catch((err) => {
+          console.debug("Remote audio play notice:", err);
+        });
+      }
+    }
+  }, [stream, isLocal]);
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -52,6 +66,16 @@ const VideoTile = ({
           : "hover:border-emerald-700/50"
       }`}
     >
+      {/* ─── Dedicated Audio Element for Remote Voice (Never muted or cut off) ─── */}
+      {!isLocal && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          playsInline
+          className="hidden"
+        />
+      )}
+
       {/* ─── Video Stream Element ─── */}
       <video
         ref={videoRef}
