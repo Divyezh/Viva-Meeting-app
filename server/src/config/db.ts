@@ -1,6 +1,13 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { Pool } from "@neondatabase/serverless";
 import dotenv from "dotenv";
-import type { User, Meeting, MeetingParticipant, MeetingMessage } from "../types/index.js";
+import type {
+  User,
+  Meeting,
+  MeetingParticipant,
+  MeetingMessage,
+  PaymentOrder,
+  PaymentTransaction,
+} from "../types/index.js";
 
 dotenv.config();
 
@@ -9,6 +16,8 @@ export const memoryUsers = new Map<string, User>();
 export const memoryMeetings = new Map<string, Meeting>();
 export const memoryParticipants = new Map<string, MeetingParticipant[]>();
 export const memoryMessages = new Map<string, MeetingMessage[]>();
+export const memoryOrders = new Map<string, PaymentOrder>();
+export const memoryPayments = new Map<string, PaymentTransaction>();
 
 let pool: Pool | null = null;
 
@@ -17,7 +26,10 @@ export const getPool = (): Pool | null => {
     try {
       pool = new Pool({ connectionString: process.env.DATABASE_URL });
     } catch (err) {
-      console.warn("[Database] Could not initialize Neon connection pool, using memory store fallback.", err);
+      console.warn(
+        "[Database] Could not initialize Neon connection pool, using memory store fallback.",
+        err
+      );
     }
   }
   return pool;
@@ -66,14 +78,44 @@ export const initDB = async (): Promise<void> => {
           message TEXT NOT NULL,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS orders (
+          id TEXT PRIMARY KEY,
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          amount INTEGER NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'INR',
+          receipt TEXT,
+          status TEXT DEFAULT 'created',
+          plan TEXT DEFAULT 'premium',
+          billing_cycle TEXT DEFAULT 'monthly',
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS payments (
+          id TEXT PRIMARY KEY,
+          order_id TEXT REFERENCES orders(id) ON DELETE SET NULL,
+          user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+          amount INTEGER NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'INR',
+          status TEXT DEFAULT 'captured',
+          method TEXT,
+          signature TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
       `);
 
       console.log("[Database] PostgreSQL tables initialized successfully.");
       return;
     } catch (err) {
-      console.warn("[Database] PostgreSQL connection failed. Operating in fast in-memory store mode.", err);
+      console.warn(
+        "[Database] PostgreSQL connection failed. Operating in fast in-memory store mode.",
+        err
+      );
     }
   }
 
-  console.log("[Database] Operating in fast in-memory store mode (Set DATABASE_URL to connect Neon PostgreSQL).");
+  console.log(
+    "[Database] Operating in fast in-memory store mode (Set DATABASE_URL to connect Neon PostgreSQL)."
+  );
 };

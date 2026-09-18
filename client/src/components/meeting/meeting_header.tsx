@@ -32,8 +32,6 @@ const MeetingHeader = ({
     hour12: true,
   }).format(new Date());
 
-  const meetingUrl = `${window.location.host}/meeting/${roomId.slice(0, 11)}`;
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/meeting/${roomId}`);
     setCopied(true);
@@ -152,8 +150,12 @@ const MeetingHeader = ({
           ) : (
             <>
               <Copy className="h-3.5 w-3.5 text-[#84cc16]" />
-              <span className="font-mono text-[11px] text-emerald-100 hidden sm:inline-block">{roomId}</span>
-              <span className="text-[11px] text-emerald-400/80 hidden sm:inline-block">· Copy Link</span>
+              <span className="font-mono text-[11px] text-emerald-100 hidden sm:inline-block">
+                {roomId}
+              </span>
+              <span className="text-[11px] text-emerald-400/80 hidden sm:inline-block">
+                · Copy Link
+              </span>
               <span className="inline-block sm:hidden text-[11px]">Copy Link</span>
             </>
           )}

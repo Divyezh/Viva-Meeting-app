@@ -13,7 +13,16 @@ const api = axios.create({
 // Request interceptor - attach Clerk JWT
 api.interceptors.request.use(async (config) => {
   try {
-    const token = await (window as any).Clerk?.session?.getToken();
+    const clerkGlobal = (
+      window as unknown as {
+        Clerk?: {
+          session?: {
+            getToken: () => Promise<string | null>;
+          };
+        };
+      }
+    ).Clerk;
+    const token = await clerkGlobal?.session?.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

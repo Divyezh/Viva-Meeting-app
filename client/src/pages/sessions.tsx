@@ -10,56 +10,60 @@ import api from "../config/api";
 
 const Sessions = () => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<Meeting[]>([]);
+  const [sessions, setSessions] = useState<Meeting[]>(() => getSavedMeetings());
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fetchSessions = async () => {
-    setIsLoading(true);
-    // 1. Get from localStorage as baseline immediately
-    const local = getSavedMeetings();
-    setSessions(local);
-
-    // 2. Fetch from backend database (if online/authenticated) and merge
-    try {
-      const response = await api.get("/sessions");
-      if (response.data && response.data.success) {
-        const dbSessions: Meeting[] = response.data.data.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          hostId: item.host_id,
-          status: item.status,
-          createdAt: item.created_at,
-          endedAt: item.ended_at,
-          participantCount: parseInt(item.participant_count, 10) || 1,
-          duration: item.duration || (item.status === "active" ? "Active" : "Ended"),
-        }));
-
-        // Merge, prioritizing database sessions
-        const merged = [...dbSessions];
-        local.forEach((loc) => {
-          if (!merged.some((m) => m.id === loc.id)) {
-            merged.push(loc);
-          }
-        });
-
-        // Sort by creation date descending
-        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-        // Sync local storage with merged truth
-        localStorage.setItem("viva_meeting_sessions", JSON.stringify(merged));
-        setSessions(merged);
-      }
-    } catch (err) {
-      console.warn("Failed to synchronize with meeting server, showing offline storage:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchSessions();
-  }, []);
+    let ignore = false;
+
+    api
+      .get("/sessions")
+      .then((response) => {
+        if (ignore) return;
+        if (response.data && response.data.success) {
+          const dbSessions: Meeting[] = response.data.data.map((item: Record<string, unknown>) => ({
+            id: String(item.id || ""),
+            title: String(item.title || "Meeting Session"),
+            hostId: String(item.host_id || ""),
+            status: item.status === "active" ? "active" : "ended",
+            createdAt: String(item.created_at || new Date().toISOString()),
+            endedAt: item.ended_at ? String(item.ended_at) : undefined,
+            participantCount: parseInt(String(item.participant_count || 1), 10) || 1,
+            duration:
+              typeof item.duration === "string"
+                ? item.duration
+                : item.status === "active"
+                  ? "Active"
+                  : "Ended",
+          }));
+
+          const local = getSavedMeetings();
+          const merged = [...dbSessions];
+          local.forEach((loc) => {
+            if (!merged.some((m) => m.id === loc.id)) {
+              merged.push(loc);
+            }
+          });
+          merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          localStorage.setItem("viva_meeting_sessions", JSON.stringify(merged));
+          setSessions(merged);
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to synchronize with meeting server, showing offline storage:", err);
+      })
+      .finally(() => {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [refreshKey]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
@@ -124,7 +128,7 @@ const Sessions = () => {
         isOpen={isNewMeetingModalOpen}
         onClose={() => {
           setIsNewMeetingModalOpen(false);
-          fetchSessions();
+          setRefreshKey((k) => k + 1);
         }}
       />
 
@@ -251,14 +255,14 @@ const SessionCard = ({
         </div>
 
         {/* Title */}
-        <h3 className="mb-1.5 truncate text-base font-bold text-slate-900">
-          {session.title}
-        </h3>
+        <h3 className="mb-1.5 truncate text-base font-bold text-slate-900">{session.title}</h3>
 
         {/* Date/Time */}
         <div className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
           <Calendar className="h-3.5 w-3.5 text-slate-400" />
-          <span>{formatDate(session.createdAt)} · {formatTime(session.createdAt)}</span>
+          <span>
+            {formatDate(session.createdAt)} · {formatTime(session.createdAt)}
+          </span>
         </div>
 
         {/* Two Stat Chips Side by Side */}

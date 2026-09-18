@@ -10,7 +10,7 @@ if (!PUBLISHABLE_KEY) {
   console.warn("Missing VITE_CLERK_PUBLISHABLE_KEY in environment variables.");
 }
 
-export const clerkAppearance = {
+const clerkAppearance = {
   layout: {
     socialButtonsPlacement: "top" as const,
     socialButtonsVariant: "blockButton" as const,
@@ -51,7 +51,8 @@ export const clerkAppearance = {
     identityPreviewEditButton: "text-[#3f6212] hover:text-[#365314] font-semibold text-xs",
     formFieldSuccessText: "text-xs text-emerald-600",
     formFieldErrorText: "text-xs text-red-600",
-    userButtonPopoverCard: "rounded-2xl border border-emerald-900/10 shadow-2xl bg-white/95 backdrop-blur-xl",
+    userButtonPopoverCard:
+      "rounded-2xl border border-emerald-900/10 shadow-2xl bg-white/95 backdrop-blur-xl",
   },
 };
 

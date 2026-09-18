@@ -31,9 +31,7 @@ const Login = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Meetup<span className="text-[#65a30d]">.</span>
           </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Ultra-low latency WebRTC video conferencing
-          </p>
+          <p className="mt-1 text-xs text-slate-500">Ultra-low latency WebRTC video conferencing</p>
         </div>
 
         {/* Official Clerk Sign In Component */}

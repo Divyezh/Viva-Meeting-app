@@ -92,9 +92,7 @@ const Navbar = () => {
               key={link.name}
               to={link.path}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-semibold ${
-                isActive
-                  ? "bg-emerald-50 text-emerald-800"
-                  : "text-slate-500 hover:text-slate-700"
+                isActive ? "bg-emerald-50 text-emerald-800" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />

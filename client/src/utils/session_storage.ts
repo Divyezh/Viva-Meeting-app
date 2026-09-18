@@ -46,4 +46,3 @@ export const deleteSavedMeeting = (meetingId: string): void => {
     console.error("Failed to delete saved meeting:", err);
   }
 };
-

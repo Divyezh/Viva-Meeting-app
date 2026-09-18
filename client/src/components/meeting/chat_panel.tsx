@@ -30,7 +30,11 @@ const ChatPanel = ({ messages, currentUserId, onSendMessage, onClose }: ChatPane
   };
 
   const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+    new Date(dateStr).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -56,17 +60,12 @@ const ChatPanel = ({ messages, currentUserId, onSendMessage, onClose }: ChatPane
         {messages.map((msg) => {
           const isOwn = msg.userId === currentUserId;
           return (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
-            >
+            <div key={msg.id} className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
               <div className="mb-0.5 flex items-center gap-2">
                 <span className="text-[11px] font-medium text-surface-500">
                   {isOwn ? "You" : msg.senderName}
                 </span>
-                <span className="text-[10px] text-surface-400">
-                  {formatTime(msg.createdAt)}
-                </span>
+                <span className="text-[10px] text-surface-400">{formatTime(msg.createdAt)}</span>
               </div>
               <div
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${

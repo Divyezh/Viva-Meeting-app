@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import socket from "../config/socket";
 import type { ChatMessage } from "../types";
 
-export const useChat = (roomId: string, currentUser: { userId: string; userName: string; avatarUrl?: string }) => {
+export const useChat = (
+  roomId: string,
+  currentUser: { userId: string; userName: string; avatarUrl?: string }
+) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);

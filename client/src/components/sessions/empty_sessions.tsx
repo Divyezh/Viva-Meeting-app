@@ -13,12 +13,10 @@ const EmptySessions = () => {
         </div>
       </div>
 
-      <h3 className="mb-2 text-lg font-semibold text-surface-200">
-        No sessions recorded yet
-      </h3>
+      <h3 className="mb-2 text-lg font-semibold text-surface-200">No sessions recorded yet</h3>
       <p className="max-w-sm text-sm text-surface-500">
-        Your meeting history will appear here once you host or join your first
-        video call. Start a new meeting to get going!
+        Your meeting history will appear here once you host or join your first video call. Start a
+        new meeting to get going!
       </p>
     </div>
   );

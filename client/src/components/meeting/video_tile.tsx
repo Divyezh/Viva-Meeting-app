@@ -55,7 +55,8 @@ const VideoTile = ({
       .slice(0, 2);
   };
 
-  const hasVideoTrack = stream && stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
+  const hasVideoTrack =
+    stream && stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
   const showVideo = !isCameraOff && hasVideoTrack;
 
   return (
@@ -67,14 +68,7 @@ const VideoTile = ({
       }`}
     >
       {/* ─── Dedicated Audio Element for Remote Voice (Never muted or cut off) ─── */}
-      {!isLocal && (
-        <audio
-          ref={audioRef}
-          autoPlay
-          playsInline
-          className="hidden"
-        />
-      )}
+      {!isLocal && <audio ref={audioRef} autoPlay playsInline className="hidden" />}
 
       {/* ─── Video Stream Element ─── */}
       <video

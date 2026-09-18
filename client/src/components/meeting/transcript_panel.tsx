@@ -1,34 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  MoreHorizontal,
   FileText,
   MessageSquare,
   Sparkles,
   Users,
   Send,
   X,
-  Smile,
   Mic,
   MicOff,
   Video,
   VideoOff,
   Search,
   UserPlus,
-  VolumeX,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ChatMessage } from "../../types";
-
-interface TranscriptEntry {
-  id: string;
-  speaker: string;
-  avatar?: string;
-  time: string;
-  text: string;
-  highlightedText?: string;
-  noteBadge?: string;
-  reactions?: string[];
-}
 
 export interface ParticipantItem {
   id: string;
@@ -59,7 +45,9 @@ const TranscriptPanel = ({
   participants = [],
   roomId = "",
 }: TranscriptPanelProps) => {
-  const [activeTab, setActiveTab] = useState<"transcript" | "chat" | "notes" | "participants">(initialTab);
+  const [activeTab, setActiveTab] = useState<"transcript" | "chat" | "notes" | "participants">(
+    initialTab
+  );
   const [chatInput, setChatInput] = useState("");
   const [participantSearch, setParticipantSearch] = useState("");
   const [notes, setNotes] = useState<string[]>([
@@ -79,9 +67,11 @@ const TranscriptPanel = ({
       .slice(0, 2);
   };
 
-  useEffect(() => {
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+  if (prevInitialTab !== initialTab) {
+    setPrevInitialTab(initialTab);
     setActiveTab(initialTab);
-  }, [initialTab]);
+  }
 
   const handleSendChat = () => {
     if (chatInput.trim()) {
@@ -305,7 +295,11 @@ const TranscriptPanel = ({
                       }`}
                       title={p.isMuted ? "Muted" : "Microphone active"}
                     >
-                      {p.isMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5 text-emerald-400" />}
+                      {p.isMuted ? (
+                        <MicOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Mic className="h-3.5 w-3.5 text-emerald-400" />
+                      )}
                     </div>
 
                     <div
@@ -316,7 +310,11 @@ const TranscriptPanel = ({
                       }`}
                       title={p.isCameraOff ? "Camera Off" : "Camera On"}
                     >
-                      {p.isCameraOff ? <VideoOff className="h-3.5 w-3.5" /> : <Video className="h-3.5 w-3.5 text-emerald-400" />}
+                      {p.isCameraOff ? (
+                        <VideoOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Video className="h-3.5 w-3.5 text-emerald-400" />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -379,7 +377,8 @@ const TranscriptPanel = ({
                 <h3 className="text-xs font-bold text-white">Live Call Status</h3>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Native WebRTC peer mesh active. Video streams, audio tracks, and real-time messages are encrypted and streamed directly between connected browsers.
+                Native WebRTC peer mesh active. Video streams, audio tracks, and real-time messages
+                are encrypted and streamed directly between connected browsers.
               </p>
             </div>
           </div>

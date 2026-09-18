@@ -30,9 +30,7 @@ const Loader = ({ message = "Loading your workspace..." }: LoaderProps) => {
         />
       </div>
 
-      <p className="mt-4 text-sm text-surface-400">
-        {message}
-      </p>
+      <p className="mt-4 text-sm text-surface-400">{message}</p>
     </div>
   );
 };

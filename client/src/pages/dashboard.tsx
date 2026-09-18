@@ -1,14 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Plus,
-  ArrowRight,
-  Shield,
-  Keyboard,
-  Crown,
-  Calendar,
-  Mail,
-  BarChart2,
-} from "lucide-react";
+import { Plus, ArrowRight, Shield, Keyboard, Crown, Calendar, Mail, BarChart2 } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { useUser } from "@clerk/clerk-react";
 import { getSavedMeetings } from "../utils/session_storage";
@@ -97,8 +88,8 @@ const Dashboard = () => {
 
             {/* Supporting paragraph */}
             <p className="mb-8 max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg">
-              Crystal clear HD video, ultra-low latency audio, and seamless
-              real-time messaging — all in one unified platform.
+              Crystal clear HD video, ultra-low latency audio, and seamless real-time messaging —
+              all in one unified platform.
             </p>
 
             {/* Action Row */}
@@ -149,9 +140,7 @@ const Dashboard = () => {
               {/* Greeting */}
               <div className="mb-4">
                 <span className="text-xs font-medium text-slate-500">Hi,</span>
-                <h2 className="text-xl font-bold text-slate-900">
-                  {activeUserName}
-                </h2>
+                <h2 className="text-xl font-bold text-slate-900">{activeUserName}</h2>
               </div>
 
               {/* Live Time Display */}
@@ -171,9 +160,7 @@ const Dashboard = () => {
                   <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                   <span className="truncate">{activeUserEmail}</span>
                 </div>
-                <span
-                  className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0 bg-[#3f6212] text-white"
-                >
+                <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0 bg-[#3f6212] text-white">
                   <Crown className="h-3 w-3" />
                   Free Plan
                 </span>
@@ -202,7 +189,9 @@ const Dashboard = () => {
                 <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-emerald-100/70">
                   <div
                     className="h-full rounded-full bg-linear-to-r from-[#4d7c0f] to-[#84cc16] transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(8, (meetingsUsed / meetingsLimit) * 100))}%` }}
+                    style={{
+                      width: `${Math.min(100, Math.max(8, (meetingsUsed / meetingsLimit) * 100))}%`,
+                    }}
                   />
                 </div>
               </div>

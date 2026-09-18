@@ -111,7 +111,7 @@ const speakerTestUri = createWavDataUri(0.8, (t) => {
   const env = Math.exp(-t * 3.8);
   let freq = 523.25; // C5
   if (t > 0.15) freq = 659.25; // E5
-  if (t > 0.30) freq = 783.99; // G5
+  if (t > 0.3) freq = 783.99; // G5
   if (t > 0.45) freq = 1046.5; // C6
   const wave =
     0.6 * Math.sin(2 * Math.PI * freq * t) +

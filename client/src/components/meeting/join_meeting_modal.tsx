@@ -1,14 +1,5 @@
 import { useState } from "react";
-import {
-  Video,
-  X,
-  User,
-  Keyboard,
-  Mic,
-  MicOff,
-  VideoOff,
-  ArrowRight,
-} from "lucide-react";
+import { Video, X, User, Keyboard, Mic, MicOff, VideoOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -19,7 +10,7 @@ interface JoinMeetingModalProps {
   defaultUserName?: string;
 }
 
-export const extractRoomId = (input: string) => {
+const extractRoomId = (input: string) => {
   let cleaned = input.trim();
   if (cleaned.includes("/meeting/")) {
     cleaned = cleaned.split("/meeting/")[1].split("?")[0].split("#")[0];
@@ -84,9 +75,7 @@ const JoinMeetingModal = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight text-slate-900">
-                  Join a Meeting
-                </h2>
+                <h2 className="text-lg font-bold tracking-tight text-slate-900">Join a Meeting</h2>
                 <span className="rounded-full bg-emerald-100/70 px-2.5 py-0.5 text-[10px] font-bold text-[#3f6212] border border-emerald-200/80">
                   Guest / Attendee
                 </span>

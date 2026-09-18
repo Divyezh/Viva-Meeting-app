@@ -7,7 +7,9 @@ export const handleClerkWebhook = async (req: Request, res: Response): Promise<v
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!webhookSecret || webhookSecret.includes("whsec_...")) {
-    console.log("[Webhook] Received webhook (Webhook secret not configured, processing in mock mode)");
+    console.log(
+      "[Webhook] Received webhook (Webhook secret not configured, processing in mock mode)"
+    );
     res.status(200).json({ success: true, message: "Webhook received in mock mode" });
     return;
   }
@@ -69,7 +71,10 @@ export const handleClerkWebhook = async (req: Request, res: Response): Promise<v
         const updatedUser: User = {
           id: data.id,
           email: data.email_addresses?.[0]?.email_address || existing?.email || "",
-          fullName: `${data.first_name || ""} ${data.last_name || ""}`.trim() || existing?.fullName || "User",
+          fullName:
+            `${data.first_name || ""} ${data.last_name || ""}`.trim() ||
+            existing?.fullName ||
+            "User",
           avatarUrl: data.image_url || existing?.avatarUrl || "",
           plan,
           createdAt: existing?.createdAt || new Date().toISOString(),
@@ -80,10 +85,18 @@ export const handleClerkWebhook = async (req: Request, res: Response): Promise<v
         if (pool) {
           await pool.query(
             "UPDATE users SET email = $1, full_name = $2, avatar_url = $3, plan = $4 WHERE id = $5",
-            [updatedUser.email, updatedUser.fullName, updatedUser.avatarUrl, updatedUser.plan, updatedUser.id]
+            [
+              updatedUser.email,
+              updatedUser.fullName,
+              updatedUser.avatarUrl,
+              updatedUser.plan,
+              updatedUser.id,
+            ]
           );
         }
-        console.log(`[Webhook] Updated user: ${updatedUser.fullName} (${updatedUser.id}) -> Plan: ${plan}`);
+        console.log(
+          `[Webhook] Updated user: ${updatedUser.fullName} (${updatedUser.id}) -> Plan: ${plan}`
+        );
         break;
       }
 

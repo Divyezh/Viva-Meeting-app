@@ -24,9 +24,18 @@ interface NewMeetingModalProps {
 
 const generateRandomMeetingId = () => {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  const part2 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  const part3 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const part1 = Array.from(
+    { length: 3 },
+    () => chars[Math.floor(Math.random() * chars.length)]
+  ).join("");
+  const part2 = Array.from(
+    { length: 3 },
+    () => chars[Math.floor(Math.random() * chars.length)]
+  ).join("");
+  const part3 = Array.from(
+    { length: 3 },
+    () => chars[Math.floor(Math.random() * chars.length)]
+  ).join("");
   return `${part1}-${part2}-${part3}`;
 };
 
@@ -225,7 +234,11 @@ const NewMeetingModal = ({
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200 text-[#3f6212] hover:bg-emerald-100 hover:text-[#1e3820] active:scale-95 transition-all shadow-2xs"
                 title="Copy Meeting Link"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>

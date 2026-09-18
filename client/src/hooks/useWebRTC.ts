@@ -16,6 +16,15 @@ interface UseWebRTCProps {
   isHost?: boolean;
 }
 
+interface RemotePeerInfo {
+  socketId: string;
+  userId: string;
+  userName: string;
+  avatarUrl?: string;
+  isMuted?: boolean;
+  isCameraOff?: boolean;
+}
+
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
@@ -64,51 +73,8 @@ export const useWebRTC = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const remoteAnalysers = useRef<Map<string, { ctx: AudioContext; animId: number }>>(new Map());
 
-  // Helper to add or update peer stream
-  const setPeerStream = useCallback(
-    (
-      socketId: string,
-      stream: MediaStream | null,
-      info: {
-        userId: string;
-        userName: string;
-        avatarUrl?: string;
-        isMuted?: boolean;
-        isCameraOff?: boolean;
-      }
-    ) => {
-      setPeers((prev) => {
-        const index = prev.findIndex((p) => p.peerId === socketId);
-        const updatedPeer: PeerStream = {
-          peerId: socketId,
-          stream: stream || (index !== -1 ? prev[index].stream : null),
-          userId: info.userId,
-          userName: info.userName,
-          avatarUrl: info.avatarUrl || "",
-          isMuted: info.isMuted ?? (index !== -1 ? prev[index].isMuted : false),
-          isCameraOff: info.isCameraOff ?? (index !== -1 ? prev[index].isCameraOff : false),
-          isSpeaking: index !== -1 ? prev[index].isSpeaking : false,
-        };
-
-        if (index !== -1) {
-          const newPeers = [...prev];
-          newPeers[index] = updatedPeer;
-          return newPeers;
-        } else {
-          return [...prev, updatedPeer];
-        }
-      });
-
-      // Attach audio speech level analysis to remote stream
-      if (stream && stream.getAudioTracks().length > 0) {
-        setupRemoteSpeakingDetection(socketId, stream);
-      }
-    },
-    []
-  );
-
   // ─── Remote Speaking Detection Engine ────────────────────────
-  const setupRemoteSpeakingDetection = (socketId: string, stream: MediaStream) => {
+  const setupRemoteSpeakingDetection = useCallback((socketId: string, stream: MediaStream) => {
     // Clean existing if re-attaching
     const existing = remoteAnalysers.current.get(socketId);
     if (existing) {
@@ -118,7 +84,9 @@ export const useWebRTC = ({
     }
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
 
       const ctx = new AudioCtx();
@@ -159,7 +127,50 @@ export const useWebRTC = ({
     } catch (err) {
       console.debug("Remote audio analysis notice:", err);
     }
-  };
+  }, []);
+
+  // Helper to add or update peer stream
+  const setPeerStream = useCallback(
+    (
+      socketId: string,
+      stream: MediaStream | null,
+      info: {
+        userId: string;
+        userName: string;
+        avatarUrl?: string;
+        isMuted?: boolean;
+        isCameraOff?: boolean;
+      }
+    ) => {
+      setPeers((prev) => {
+        const index = prev.findIndex((p) => p.peerId === socketId);
+        const updatedPeer: PeerStream = {
+          peerId: socketId,
+          stream: stream || (index !== -1 ? prev[index].stream : null),
+          userId: info.userId,
+          userName: info.userName,
+          avatarUrl: info.avatarUrl || "",
+          isMuted: info.isMuted ?? (index !== -1 ? prev[index].isMuted : false),
+          isCameraOff: info.isCameraOff ?? (index !== -1 ? prev[index].isCameraOff : false),
+          isSpeaking: index !== -1 ? prev[index].isSpeaking : false,
+        };
+
+        if (index !== -1) {
+          const newPeers = [...prev];
+          newPeers[index] = updatedPeer;
+          return newPeers;
+        } else {
+          return [...prev, updatedPeer];
+        }
+      });
+
+      // Attach audio speech level analysis to remote stream
+      if (stream && stream.getAudioTracks().length > 0) {
+        setupRemoteSpeakingDetection(socketId, stream);
+      }
+    },
+    [setupRemoteSpeakingDetection]
+  );
 
   // ─── 1. Initialize Local Media Stream (Studio Mic Constraints) ──
   useEffect(() => {
@@ -227,7 +238,9 @@ export const useWebRTC = ({
 
         // Initialize Web Audio level detection for local user speaking border
         try {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          const AudioContextClass =
+            window.AudioContext ||
+            (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
           if (AudioContextClass) {
             const ctx = new AudioContextClass();
             audioContextRef.current = ctx;
@@ -287,6 +300,8 @@ export const useWebRTC = ({
 
     startLocalMedia();
 
+    const currentAnalysers = remoteAnalysers.current;
+
     return () => {
       if (activeStream) {
         activeStream.getTracks().forEach((t) => t.stop());
@@ -294,17 +309,35 @@ export const useWebRTC = ({
       if (audioContextRef.current) {
         audioContextRef.current.close().catch(() => {});
       }
-      remoteAnalysers.current.forEach((item) => {
+      currentAnalysers.forEach((item) => {
         cancelAnimationFrame(item.animId);
         item.ctx.close().catch(() => {});
       });
-      remoteAnalysers.current.clear();
+      currentAnalysers.clear();
     };
-  }, [roomId, currentUser.userId, currentUser.userName, currentUser.avatarUrl, enabled, isHost, initialMuted, initialCameraOff]);
+  }, [
+    roomId,
+    currentUser.userId,
+    currentUser.userName,
+    currentUser.avatarUrl,
+    enabled,
+    isHost,
+    initialMuted,
+    initialCameraOff,
+  ]);
 
   // ─── 2. WebRTC Peer Connection Factory ──────────────────────
   const createPeerConnection = useCallback(
-    (targetSocketId: string, remoteInfo: { userId: string; userName: string; avatarUrl?: string; isMuted?: boolean; isCameraOff?: boolean }) => {
+    (
+      targetSocketId: string,
+      remoteInfo: {
+        userId: string;
+        userName: string;
+        avatarUrl?: string;
+        isMuted?: boolean;
+        isCameraOff?: boolean;
+      }
+    ) => {
       if (peerConnections.current.has(targetSocketId)) {
         return peerConnections.current.get(targetSocketId)!;
       }
@@ -338,7 +371,11 @@ export const useWebRTC = ({
 
       // Handle connection state changes
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "disconnected" || pc.connectionState === "failed" || pc.connectionState === "closed") {
+        if (
+          pc.connectionState === "disconnected" ||
+          pc.connectionState === "failed" ||
+          pc.connectionState === "closed"
+        ) {
           const analyser = remoteAnalysers.current.get(targetSocketId);
           if (analyser) {
             cancelAnimationFrame(analyser.animId);
@@ -358,7 +395,7 @@ export const useWebRTC = ({
   // ─── 3. Socket Signaling Listeners ──────────────────────────
   useEffect(() => {
     // A. Received existing peers in the room -> initiate WebRTC Offer to each
-    const handleExistingUsers = async (users: any[]) => {
+    const handleExistingUsers = async (users: RemotePeerInfo[]) => {
       for (const user of users) {
         const pc = createPeerConnection(user.socketId, user);
         setPeerStream(user.socketId, null, user);
@@ -388,7 +425,7 @@ export const useWebRTC = ({
     };
 
     // B. A new user joined the room
-    const handleUserJoined = (newUser: any) => {
+    const handleUserJoined = (newUser: RemotePeerInfo) => {
       setPeerStream(newUser.socketId, null, newUser);
       // Play pleasant Howler join chime
       soundEffects.playJoin();
@@ -402,7 +439,7 @@ export const useWebRTC = ({
     }: {
       callerSocketId: string;
       offer: RTCSessionDescriptionInit;
-      callerInfo: any;
+      callerInfo: RemotePeerInfo;
     }) => {
       const pc = createPeerConnection(callerSocketId, callerInfo);
       setPeerStream(callerSocketId, null, callerInfo);
@@ -584,24 +621,27 @@ export const useWebRTC = ({
   }, [roomId, isMuted]);
 
   // ─── 6. User Actions: Screen Share ──────────────────────────
+  const stopScreenShare = useCallback(() => {
+    if (screenTrackRef.current) {
+      screenTrackRef.current.stop();
+      screenTrackRef.current = null;
+    }
+
+    if (localStreamRef.current) {
+      const camVideoTrack = localStreamRef.current.getVideoTracks()[0];
+      peerConnections.current.forEach((pc) => {
+        const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+        if (sender && camVideoTrack) {
+          sender.replaceTrack(camVideoTrack);
+        }
+      });
+    }
+    setIsScreenSharing(false);
+  }, []);
+
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
-      // Stop Screen Share -> Revert to camera
-      if (screenTrackRef.current) {
-        screenTrackRef.current.stop();
-        screenTrackRef.current = null;
-      }
-
-      if (localStreamRef.current) {
-        const camVideoTrack = localStreamRef.current.getVideoTracks()[0];
-        peerConnections.current.forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-          if (sender && camVideoTrack) {
-            sender.replaceTrack(camVideoTrack);
-          }
-        });
-      }
-      setIsScreenSharing(false);
+      stopScreenShare();
     } else {
       // Start Screen Share
       try {
@@ -614,7 +654,7 @@ export const useWebRTC = ({
         screenTrackRef.current = displayVideoTrack;
 
         displayVideoTrack.onended = () => {
-          toggleScreenShare();
+          stopScreenShare();
         };
 
         peerConnections.current.forEach((pc) => {
@@ -629,7 +669,7 @@ export const useWebRTC = ({
         console.warn("Screen share cancelled or failed:", err);
       }
     }
-  }, [isScreenSharing]);
+  }, [isScreenSharing, stopScreenShare]);
 
   // ─── 7. User Actions: Send Chat Message ─────────────────────
   const sendMessage = useCallback(

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, MessageSquare, Users, Calendar, Clock } from "lucide-react";
+import { X, MessageSquare, Users, Clock } from "lucide-react";
 import type { SessionDetail } from "../../types";
 
 interface SessionDetailModalProps {
@@ -31,7 +31,12 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
     });
 
   const getInitials = (name: string) =>
-    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
   return (
     <>
@@ -65,20 +70,28 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
                 Ended
               </span>
             </div>
-            <h2 className="mb-1 text-xl font-bold text-surface-900">
-              {detail.meeting.title}
-            </h2>
+            <h2 className="mb-1 text-xl font-bold text-surface-900">{detail.meeting.title}</h2>
             <p className="text-xs text-surface-400">
-              Host: Divyesh Soni · Created {formatDate(detail.meeting.createdAt)}{" "}
-              · Duration: {detail.meeting.duration || "45 min"}
+              Host: Divyesh Soni · Created {formatDate(detail.meeting.createdAt)} · Duration:{" "}
+              {detail.meeting.duration || "45 min"}
             </p>
           </div>
 
           {/* Tabs */}
           <div className="mb-5 flex border-b border-surface-100">
             {[
-              { key: "chat" as const, label: "Chat Transcript", icon: MessageSquare, count: detail.messages.length },
-              { key: "participants" as const, label: "Participants Log", icon: Users, count: detail.participants.length },
+              {
+                key: "chat" as const,
+                label: "Chat Transcript",
+                icon: MessageSquare,
+                count: detail.messages.length,
+              },
+              {
+                key: "participants" as const,
+                label: "Participants Log",
+                icon: Users,
+                count: detail.participants.length,
+              },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -118,17 +131,12 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
             ) : (
               <div className="space-y-2">
                 {detail.participants.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-3 rounded-xl bg-surface-50 p-3"
-                  >
+                  <div key={p.id} className="flex items-center gap-3 rounded-xl bg-surface-50 p-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
                       {getInitials(p.fullName)}
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-surface-800">
-                        {p.fullName}
-                      </h4>
+                      <h4 className="text-sm font-semibold text-surface-800">{p.fullName}</h4>
                       <div className="flex items-center gap-3 text-xs text-surface-400">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />

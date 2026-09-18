@@ -47,11 +47,13 @@ const SessionChatTab = ({ messages }: SessionChatTabProps) => {
   return (
     <div className="space-y-1 p-1">
       {messages.map((msg, index) => {
-        const showAvatar =
-          index === 0 || messages[index - 1].userId !== msg.userId;
+        const showAvatar = index === 0 || messages[index - 1].userId !== msg.userId;
 
         return (
-          <div key={msg.id} className={`flex items-start gap-3 ${showAvatar ? "mt-4 first:mt-0" : "mt-0.5"}`}>
+          <div
+            key={msg.id}
+            className={`flex items-start gap-3 ${showAvatar ? "mt-4 first:mt-0" : "mt-0.5"}`}
+          >
             {/* Avatar */}
             <div className="w-8 shrink-0">
               {showAvatar && (
@@ -69,12 +71,8 @@ const SessionChatTab = ({ messages }: SessionChatTabProps) => {
             <div className="flex-1 min-w-0">
               {showAvatar && (
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs font-semibold text-surface-200">
-                    {msg.senderName}
-                  </span>
-                  <span className="text-[10px] text-surface-600">
-                    {formatTime(msg.createdAt)}
-                  </span>
+                  <span className="text-xs font-semibold text-surface-200">{msg.senderName}</span>
+                  <span className="text-[10px] text-surface-600">{formatTime(msg.createdAt)}</span>
                 </div>
               )}
               <div className="rounded-lg rounded-tl-sm bg-surface-800/70 px-3 py-2 text-sm text-surface-200">

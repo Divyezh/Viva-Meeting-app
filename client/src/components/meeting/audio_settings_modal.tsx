@@ -54,18 +54,20 @@ const AudioSettingsModal = ({
   // ─── 1. Live Mic Visualizer ─────────────────────────────────────
   useEffect(() => {
     if (!isOpen || !localStream || isMuted) {
-      setMicFrequencies(new Array(24).fill(6));
       return;
     }
 
     const audioTracks = localStream.getAudioTracks();
     if (audioTracks.length === 0 || !audioTracks[0].enabled) {
-      setMicFrequencies(new Array(24).fill(6));
       return;
     }
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+
       const ctx = new AudioCtx();
       audioContextRef.current = ctx;
 
@@ -155,8 +157,8 @@ const AudioSettingsModal = ({
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/ogg";
+          ? "audio/webm"
+          : "audio/ogg";
 
       const recorder = new MediaRecorder(localStream, {
         mimeType,
@@ -306,10 +308,10 @@ const AudioSettingsModal = ({
                     backgroundColor: isMuted
                       ? "#3f3f46"
                       : val > 65
-                      ? "#10b981"
-                      : val > 30
-                      ? "#10b981"
-                      : "#059669",
+                        ? "#10b981"
+                        : val > 30
+                          ? "#10b981"
+                          : "#059669",
                     opacity: isMuted ? 0.3 : 0.85,
                   }}
                 />
@@ -412,7 +414,9 @@ const AudioSettingsModal = ({
                 </div>
                 <div>
                   <span className="text-xs font-bold text-white block">Speaker & Audio Volume</span>
-                  <p className="text-[10px] text-zinc-400">Verify audio alerts and output chime clarity</p>
+                  <p className="text-[10px] text-zinc-400">
+                    Verify audio alerts and output chime clarity
+                  </p>
                 </div>
               </div>
 

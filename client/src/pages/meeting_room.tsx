@@ -1,16 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
-import {
-  Video,
-  Clock,
-  Check,
-  X,
-  UserCheck,
-  ShieldAlert,
-  ArrowLeft,
-  Sparkles,
-} from "lucide-react";
+import { Clock, Check, X, UserCheck, ShieldAlert, ArrowLeft, Sparkles } from "lucide-react";
 import VideoGrid from "../components/meeting/video_grid";
 import MeetingHeader from "../components/meeting/meeting_header";
 import ControlBar from "../components/meeting/control_bar";
@@ -47,14 +38,16 @@ const MeetingRoom = () => {
     return saved && saved.trim() ? saved.trim() : "Divyesh Soni";
   }, [user]);
 
-  const currentUserId = useMemo(() => {
-    if (user?.id) return user.id;
-    const saved = localStorage.getItem("meeting_user_id");
+  const [persistedUserId] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("meeting_user_id") : null;
     if (saved) return saved;
     const newId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    localStorage.setItem("meeting_user_id", newId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("meeting_user_id", newId);
+    }
     return newId;
-  }, [user]);
+  });
+  const currentUserId = user?.id || persistedUserId;
 
   const currentUserAvatar = user?.imageUrl || "";
 
@@ -66,7 +59,9 @@ const MeetingRoom = () => {
 
   // ─── Sidebar / Drawer State ─────────────────────────────────
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [activePanelTab, setActivePanelTab] = useState<"transcript" | "chat" | "notes" | "participants">("chat");
+  const [activePanelTab, setActivePanelTab] = useState<
+    "transcript" | "chat" | "notes" | "participants"
+  >("chat");
   const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
 
   // Pre-join audio and camera preferences
@@ -103,6 +98,34 @@ const MeetingRoom = () => {
     enabled: admissionStatus === "admitted",
     isHost,
   });
+
+  // Host Action: Admit Guest
+  const handleAdmitUser = useCallback(
+    (requesterSocketId: string, guestName: string) => {
+      socket.emit("approve-join-request", {
+        requesterSocketId,
+        approved: true,
+        roomId: cleanRoomId,
+      });
+      setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
+      toast.success(`Admitted ${guestName} to the meeting`);
+    },
+    [cleanRoomId]
+  );
+
+  // Host Action: Deny Guest
+  const handleDenyUser = useCallback(
+    (requesterSocketId: string, guestName: string) => {
+      socket.emit("approve-join-request", {
+        requesterSocketId,
+        approved: false,
+        roomId: cleanRoomId,
+      });
+      setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
+      toast(`${guestName}'s request was declined`);
+    },
+    [cleanRoomId]
+  );
 
   // ─── Socket Signaling for Admission & Knock Flow ────────────
   useEffect(() => {
@@ -183,35 +206,15 @@ const MeetingRoom = () => {
         socket.off("join-response", handleJoinResponse);
       };
     }
-  }, [cleanRoomId, currentUserId, currentUserName, currentUserAvatar, isHost]);
-
-  // Host Action: Admit Guest
-  const handleAdmitUser = useCallback(
-    (requesterSocketId: string, guestName: string) => {
-      socket.emit("approve-join-request", {
-        requesterSocketId,
-        approved: true,
-        roomId: cleanRoomId,
-      });
-      setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
-      toast.success(`Admitted ${guestName} to the meeting`);
-    },
-    [cleanRoomId]
-  );
-
-  // Host Action: Deny Guest
-  const handleDenyUser = useCallback(
-    (requesterSocketId: string, guestName: string) => {
-      socket.emit("approve-join-request", {
-        requesterSocketId,
-        approved: false,
-        roomId: cleanRoomId,
-      });
-      setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
-      toast(`${guestName}'s request was declined`);
-    },
-    [cleanRoomId]
-  );
+  }, [
+    cleanRoomId,
+    currentUserId,
+    currentUserName,
+    currentUserAvatar,
+    handleAdmitUser,
+    handleDenyUser,
+    isHost,
+  ]);
 
   // Dynamic participants list formed by local user + all connected peers
   const participantsList: ParticipantItem[] = useMemo(() => {
@@ -305,11 +308,10 @@ const MeetingRoom = () => {
             <span>Waiting for Host Admission</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight text-white mt-3">
-            Asking to join...
-          </h2>
+          <h2 className="text-2xl font-bold tracking-tight text-white mt-3">Asking to join...</h2>
           <p className="mt-2 text-xs leading-relaxed text-emerald-200/70">
-            Your request has been sent to the host. You'll automatically enter the meeting once they let you in.
+            Your request has been sent to the host. You'll automatically enter the meeting once they
+            let you in.
           </p>
 
           {/* Meeting & User Summary Card */}
@@ -320,7 +322,9 @@ const MeetingRoom = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-emerald-300/60 font-medium">Joining As</span>
-              <span className="text-xs font-bold text-white truncate max-w-40">{currentUserName}</span>
+              <span className="text-xs font-bold text-white truncate max-w-40">
+                {currentUserName}
+              </span>
             </div>
           </div>
 

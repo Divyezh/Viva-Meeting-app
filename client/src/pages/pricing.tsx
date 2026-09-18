@@ -82,9 +82,7 @@ const Pricing = () => {
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                       <Check className="h-3 w-3" />
                     </div>
-                    <span className="text-xs font-medium text-slate-600 sm:text-sm">
-                      {feature}
-                    </span>
+                    <span className="text-xs font-medium text-slate-600 sm:text-sm">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -126,9 +124,7 @@ const Pricing = () => {
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[#4d7c0f]">
                       <Check className="h-3 w-3" />
                     </div>
-                    <span className="text-xs font-medium text-slate-700 sm:text-sm">
-                      {feature}
-                    </span>
+                    <span className="text-xs font-medium text-slate-700 sm:text-sm">{feature}</span>
                   </div>
                 ))}
               </div>

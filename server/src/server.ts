@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { initDB } from "./config/db.js";
 import meetingRoutes from "./routes/meeting_routes.js";
+import paymentRoutes from "./routes/payment_routes.js";
 import { setupSocket } from "./socket.js";
 
 dotenv.config();
@@ -20,7 +21,14 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+// Store rawBody buffer for cryptographic signature validation in webhooks (Razorpay / Clerk)
+app.use(
+  express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -43,6 +51,7 @@ app.get("/", (_req, res) => {
 
 // ─── API Routes ───────────────────────────────────────────────
 app.use("/api/meetings", meetingRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // ─── Error Handling Middleware ────────────────────────────────
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

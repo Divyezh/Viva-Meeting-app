@@ -4,11 +4,16 @@ import type { AuthRequest } from "../types/index.js";
 import { memoryUsers } from "../config/db.js";
 
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-const clerk = clerkSecretKey && !clerkSecretKey.includes("sk_test_...")
-  ? createClerkClient({ secretKey: clerkSecretKey })
-  : null;
+const clerk =
+  clerkSecretKey && !clerkSecretKey.includes("sk_test_...")
+    ? createClerkClient({ secretKey: clerkSecretKey })
+    : null;
 
-export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const requireAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -62,6 +67,8 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
     };
     next();
   } catch (error: any) {
-    res.status(401).json({ success: false, message: "Invalid or expired token", error: error.message });
+    res
+      .status(401)
+      .json({ success: false, message: "Invalid or expired token", error: error.message });
   }
 };

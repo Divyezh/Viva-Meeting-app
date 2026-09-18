@@ -148,7 +148,11 @@ const ControlBar = ({
           }`}
           title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
         >
-          {isMuted ? <MicOff className="h-4.5 w-4.5" /> : <Mic className="h-4.5 w-4.5 text-[#a3e635]" />}
+          {isMuted ? (
+            <MicOff className="h-4.5 w-4.5" />
+          ) : (
+            <Mic className="h-4.5 w-4.5 text-[#a3e635]" />
+          )}
         </button>
 
         {/* 3. Camera Toggle */}
@@ -161,7 +165,11 @@ const ControlBar = ({
           }`}
           title={isCameraOff ? "Turn on camera" : "Turn off camera"}
         >
-          {isCameraOff ? <VideoOff className="h-4.5 w-4.5" /> : <Video className="h-4.5 w-4.5 text-[#a3e635]" />}
+          {isCameraOff ? (
+            <VideoOff className="h-4.5 w-4.5" />
+          ) : (
+            <Video className="h-4.5 w-4.5 text-[#a3e635]" />
+          )}
         </button>
 
         {/* 4. Screen Share Toggle */}
@@ -267,9 +275,16 @@ const ControlBar = ({
 
         {/* 11. More Options */}
         <button
-          onClick={() => toast("Meeting encrypted with WebRTC DTLS-SRTP 🔐", {
-            style: { background: "#081307", color: "#fff", border: "1px solid #365314", borderRadius: "9999px" },
-          })}
+          onClick={() =>
+            toast("Meeting encrypted with WebRTC DTLS-SRTP 🔐", {
+              style: {
+                background: "#081307",
+                color: "#fff",
+                border: "1px solid #365314",
+                borderRadius: "9999px",
+              },
+            })
+          }
           className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white transition-all"
           title="Meeting Info & Encryption"
         >

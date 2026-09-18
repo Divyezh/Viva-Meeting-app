@@ -1,12 +1,7 @@
 import { Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import type { AuthRequest, Meeting, MeetingParticipant } from "../types/index.js";
-import {
-  memoryMeetings,
-  memoryParticipants,
-  memoryMessages,
-  getPool,
-} from "../config/db.js";
+import { memoryMeetings, memoryParticipants, memoryMessages, getPool } from "../config/db.js";
 
 // ─── POST /api/meetings/create ──────────────────────────────
 export const createMeeting = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -33,14 +28,17 @@ export const createMeeting = async (req: AuthRequest, res: Response): Promise<vo
         const currentYear = new Date().getFullYear();
         count = Array.from(memoryMeetings.values()).filter((m) => {
           const d = new Date(m.createdAt);
-          return m.hostId === userId && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+          return (
+            m.hostId === userId && d.getMonth() === currentMonth && d.getFullYear() === currentYear
+          );
         }).length;
       }
 
       if (count >= 30) {
         res.status(403).json({
           success: false,
-          message: "Monthly meeting quota reached (30 meetings/month on Free tier). Upgrade to Premium for unlimited meetings.",
+          message:
+            "Monthly meeting quota reached (30 meetings/month on Free tier). Upgrade to Premium for unlimited meetings.",
           code: "LIMIT_REACHED",
         });
         return;
@@ -250,7 +248,10 @@ export const deleteSession = async (req: AuthRequest, res: Response): Promise<vo
       if (meeting.host_id === userId) {
         await pool.query("DELETE FROM meetings WHERE id = $1", [id]);
       } else {
-        await pool.query("DELETE FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2", [id, userId]);
+        await pool.query(
+          "DELETE FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2",
+          [id, userId]
+        );
       }
 
       res.status(200).json({
@@ -284,4 +285,3 @@ export const deleteSession = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ success: false, message: error.message });
   }
 };
-

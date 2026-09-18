@@ -206,13 +206,7 @@ export const setupSocket = (server: HttpServer): Server => {
     // ─── 3. WEBRTC SIGNALING: ANSWER ──────────────────────────
     socket.on(
       "webrtc-answer",
-      ({
-        targetSocketId,
-        answer,
-      }: {
-        targetSocketId: string;
-        answer: any;
-      }) => {
+      ({ targetSocketId, answer }: { targetSocketId: string; answer: any }) => {
         io.to(targetSocketId).emit("webrtc-answer", {
           responderSocketId: socket.id,
           answer,
@@ -223,13 +217,7 @@ export const setupSocket = (server: HttpServer): Server => {
     // ─── 4. WEBRTC SIGNALING: ICE CANDIDATE ───────────────────
     socket.on(
       "ice-candidate",
-      ({
-        targetSocketId,
-        candidate,
-      }: {
-        targetSocketId: string;
-        candidate: any;
-      }) => {
+      ({ targetSocketId, candidate }: { targetSocketId: string; candidate: any }) => {
         io.to(targetSocketId).emit("ice-candidate", {
           senderSocketId: socket.id,
           candidate,

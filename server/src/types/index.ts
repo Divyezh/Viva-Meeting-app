@@ -60,4 +60,45 @@ export interface AuthUser {
 
 export interface AuthRequest extends Request {
   user?: AuthUser;
+  rawBody?: Buffer | string;
+}
+
+export type BillingCycle = "monthly" | "yearly";
+export type OrderStatus = "created" | "paid" | "failed" | "attempted";
+export type PaymentStatus = "captured" | "failed" | "refunded";
+
+export interface PaymentOrder {
+  id: string; // Razorpay Order ID (e.g. order_xxx)
+  userId: string;
+  amount: number; // in paise
+  currency: string;
+  receipt: string;
+  status: OrderStatus;
+  plan: "free" | "premium";
+  billingCycle: BillingCycle;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PaymentTransaction {
+  id: string; // Razorpay Payment ID (e.g. pay_xxx)
+  orderId: string;
+  userId: string;
+  amount: number; // in paise
+  currency: string;
+  status: PaymentStatus;
+  method?: string;
+  signature?: string;
+  createdAt: string;
+}
+
+export interface CreateOrderDTO {
+  plan?: "premium";
+  billingCycle?: BillingCycle;
+}
+
+export interface VerifyPaymentDTO {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
 }

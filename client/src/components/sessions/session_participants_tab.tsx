@@ -62,9 +62,7 @@ const SessionParticipantsTab = ({ participants }: SessionParticipantsTabProps) =
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <h4 className="truncate text-sm font-semibold text-surface-100">
-              {p.fullName}
-            </h4>
+            <h4 className="truncate text-sm font-semibold text-surface-100">{p.fullName}</h4>
             <div className="flex items-center gap-3 mt-0.5">
               <div className="flex items-center gap-1 text-xs text-surface-500">
                 <LogIn className="h-3 w-3" />
