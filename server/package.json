@@ -4,6 +4,9 @@
   "description": "Meetup Real-Time Video Conferencing Signaling & REST Server in TypeScript",
   "main": "dist/server.js",
   "type": "module",
+  "allowScripts": {
+    "@clerk/shared": true
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",

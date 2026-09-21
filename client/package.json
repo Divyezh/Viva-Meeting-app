@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "allowScripts": {
+    "@clerk/shared": true,
+    "@clerk/shared@3.47.8": true,
+    "@swc/core": true,
+    "@swc/core@1.16.2": true
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
