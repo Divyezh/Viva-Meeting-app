@@ -49,6 +49,7 @@ const JoinMeetingModal = ({
     localStorage.setItem("meeting_user_name", userName.trim());
     localStorage.setItem("prejoin_muted", isMicMuted ? "true" : "false");
     localStorage.setItem("prejoin_camera_off", isCameraOff ? "true" : "false");
+    localStorage.removeItem(`is_host_${cleanId}`);
 
     onClose();
     navigate(`/meeting/${cleanId}`);

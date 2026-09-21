@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import {
   Clock,
@@ -31,13 +31,20 @@ interface JoinRequest {
 const MeetingRoom = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const cleanRoomId = roomId || "default-room";
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useUser();
 
-  // Host detection
+  // Bulletproof host detection: query param (?host=true) takes precedence, fallback to localStorage
   const isHost = useMemo(() => {
-    return localStorage.getItem(`is_host_${cleanRoomId}`) === "true";
-  }, [cleanRoomId]);
+    const fromQuery = searchParams.get("host") === "true";
+    const fromStorage = localStorage.getItem(`is_host_${cleanRoomId}`) === "true";
+    if (fromQuery) {
+      localStorage.setItem(`is_host_${cleanRoomId}`, "true");
+      return true;
+    }
+    return fromStorage;
+  }, [searchParams, cleanRoomId]);
 
   // Load user name from Clerk, localStorage or default
   const currentUserName = useMemo(() => {
@@ -143,8 +150,9 @@ const MeetingRoom = () => {
       socket.connect();
     }
 
-    // Listen for host closing the meeting (applies to both host and guests)
+    // Listen for host closing the meeting (applies only to guests; host controls the meeting lifecycle)
     const handleMeetingEnded = (data?: { reason?: string }) => {
+      if (isHost) return;
       leaveMeeting();
       setAdmissionStatus("closed");
       if (data?.reason) {
@@ -215,16 +223,24 @@ const MeetingRoom = () => {
       const handleJoinResponse = ({
         approved,
         meetingClosed,
+        waitingForHost,
         reason,
       }: {
         approved: boolean;
         meetingClosed?: boolean;
+        waitingForHost?: boolean;
         reason?: string;
       }) => {
         if (meetingClosed) {
           setAdmissionStatus("closed");
           setClosedReason(reason || "Host closed the meeting");
           leaveMeeting();
+          return;
+        }
+
+        if (waitingForHost) {
+          // Keep guest in waiting room
+          setAdmissionStatus("waiting");
           return;
         }
 

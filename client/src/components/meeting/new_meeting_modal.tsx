@@ -97,12 +97,15 @@ const NewMeetingModal = ({
       return;
     }
 
+    const cleanId = meetingId.trim();
     localStorage.setItem("meeting_user_name", userName.trim());
-    localStorage.setItem(`is_host_${meetingId.trim()}`, "true");
+    localStorage.setItem(`is_host_${cleanId}`, "true");
+    localStorage.setItem("prejoin_muted", isMicMuted ? "true" : "false");
+    localStorage.setItem("prejoin_camera_off", isCameraOff ? "true" : "false");
 
     // Save meeting to real sessions history
     saveCreatedMeeting({
-      id: meetingId.trim(),
+      id: cleanId,
       title: meetingTitle.trim() || "Product Sync & Standup",
       hostId: "user_host",
       participantCount: 1,
@@ -121,7 +124,7 @@ const NewMeetingModal = ({
     });
 
     onClose();
-    navigate(`/meeting/${meetingId.trim()}`);
+    navigate(`/meeting/${cleanId}?host=true`);
   };
 
   return (
