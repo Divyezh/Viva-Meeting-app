@@ -15,7 +15,7 @@ export const setupSocket = (server: HttpServer): Server => {
 
   const io = new Server(server, {
     cors: {
-      origin: [clientUrl, "http://localhost:5173", "http://localhost:3000", "*"],
+      origin: (origin, callback) => callback(null, true),
       methods: ["GET", "POST"],
       credentials: true,
     },

@@ -17,8 +17,14 @@ const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 // ─── Middleware ───────────────────────────────────────────────
 app.use(
   cors({
-    origin: [CLIENT_URL, "http://localhost:5173", "http://localhost:3000", "*"],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return callback(null, true);
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   })
 );
 // Store rawBody buffer for cryptographic signature validation in webhooks (Razorpay / Clerk)

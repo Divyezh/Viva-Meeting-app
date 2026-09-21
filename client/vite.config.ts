@@ -8,8 +8,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: "https://viva-meeting-app.onrender.com",
         changeOrigin: true,
+        secure: false,
       },
     },
   },
