@@ -1,14 +1,19 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
-import { memoryMessages, getPool } from "./config/db.js";
+import { memoryMessages, memoryMeetings, getPool } from "./config/db.js";
 import type { SocketParticipant, MeetingMessage } from "./types/index.js";
 
 // Active room participants map: roomId -> Map(socketId -> SocketParticipant)
 const roomParticipants = new Map<string, Map<string, SocketParticipant>>();
-// Socket to room mapping: socketId -> { roomId, userId, userName }
-const socketToRoom = new Map<string, { roomId: string; userId: string; userName: string }>();
+// Socket to room mapping: socketId -> { roomId, userId, userName, isHost?: boolean }
+const socketToRoom = new Map<
+  string,
+  { roomId: string; userId: string; userName: string; isHost?: boolean }
+>();
 // Room host mapping: roomId -> { socketId: string; userId: string; userName: string }
 const roomHosts = new Map<string, { socketId: string; userId: string; userName: string }>();
+// Track meetings that were explicitly closed/ended by the host
+const closedMeetings = new Set<string>();
 
 export const setupSocket = (server: HttpServer): Server => {
   const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
@@ -27,7 +32,7 @@ export const setupSocket = (server: HttpServer): Server => {
     // ─── 0. REQUEST TO JOIN (Waiting Room / Admission Request) ─
     socket.on(
       "request-join",
-      ({
+      async ({
         roomId,
         userId,
         userName,
@@ -45,13 +50,69 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
+        // 1. Check if meeting has already been closed by host
+        if (closedMeetings.has(roomId)) {
+          console.log(`[Join Denied] Room "${roomId}" was already closed by the host.`);
+          socket.emit("join-response", {
+            approved: false,
+            meetingClosed: true,
+            reason: "Host closed the meeting",
+          });
+          return;
+        }
+
+        // 2. Check in-memory meeting status
+        const memMeeting = memoryMeetings.get(roomId);
+        if (memMeeting && memMeeting.status === "ended") {
+          closedMeetings.add(roomId);
+          socket.emit("join-response", {
+            approved: false,
+            meetingClosed: true,
+            reason: "Host closed the meeting",
+          });
+          return;
+        }
+
+        // 3. Check DB meeting status if PostgreSQL is connected
+        const pool = getPool();
+        if (pool) {
+          try {
+            const dbRes = await pool.query("SELECT status FROM meetings WHERE id = $1", [roomId]);
+            if (dbRes.rows.length > 0 && dbRes.rows[0].status === "ended") {
+              closedMeetings.add(roomId);
+              socket.emit("join-response", {
+                approved: false,
+                meetingClosed: true,
+                reason: "Host closed the meeting",
+              });
+              return;
+            }
+          } catch (dbErr) {
+            console.warn("[Database] Check meeting status error:", dbErr);
+          }
+        }
+
         const roomMap = roomParticipants.get(roomId);
         const host = roomHosts.get(roomId);
 
-        // If user is explicitly host, or if room is empty / no active host, auto-admit as host
-        if (isHost || !roomMap || roomMap.size === 0 || !host) {
+        // 4. If the user is the actual host, register and auto-admit them
+        if (isHost) {
           roomHosts.set(roomId, { socketId: socket.id, userId, userName });
           socket.emit("join-response", { approved: true, isHost: true, roomId });
+          return;
+        }
+
+        // 5. If the user is NOT the host:
+        // If there is NO active host in the room, they CANNOT auto-admit!
+        if (!host || !roomMap || roomMap.size === 0) {
+          console.log(
+            `[Join Denied] Guest "${userName}" cannot join: Host is not present in room "${roomId}"`
+          );
+          socket.emit("join-response", {
+            approved: false,
+            meetingClosed: true,
+            reason: "Host closed the meeting",
+          });
           return;
         }
 
@@ -123,6 +184,15 @@ export const setupSocket = (server: HttpServer): Server => {
       }) => {
         if (!roomId) return;
 
+        // If the meeting was closed by the host, reject immediately
+        if (closedMeetings.has(roomId)) {
+          socket.emit("meeting-ended-by-host", {
+            roomId,
+            reason: "Host closed the meeting",
+          });
+          return;
+        }
+
         socket.join(roomId);
 
         if (!roomParticipants.has(roomId)) {
@@ -131,13 +201,15 @@ export const setupSocket = (server: HttpServer): Server => {
 
         const roomMap = roomParticipants.get(roomId)!;
 
-        // If this is the first user or marked host, register as host
+        // If this is the host, register as host
         if (isHost || !roomHosts.has(roomId)) {
-          roomHosts.set(roomId, {
-            socketId: socket.id,
-            userId: userId || `user_${Date.now()}`,
-            userName: userName || "Host",
-          });
+          if (isHost) {
+            roomHosts.set(roomId, {
+              socketId: socket.id,
+              userId: userId || `user_${Date.now()}`,
+              userName: userName || "Host",
+            });
+          }
         }
 
         // Collect existing participants in this room to return to the new joiner
@@ -163,6 +235,7 @@ export const setupSocket = (server: HttpServer): Server => {
           roomId,
           userId: newUser.userId,
           userName: newUser.userName,
+          isHost: isHost || roomHosts.get(roomId)?.socketId === socket.id,
         });
 
         console.log(
@@ -176,6 +249,44 @@ export const setupSocket = (server: HttpServer): Server => {
         socket.to(roomId).emit("user-joined", newUser);
       }
     );
+
+    // ─── 1.1 HOST EXPLICITLY CLOSES / ENDS MEETING FOR ALL ───────
+    socket.on("host-close-meeting", async ({ roomId }: { roomId: string }) => {
+      console.log(`[Host Closed Meeting] Room: ${roomId} closed by host ${socket.id}`);
+      closedMeetings.add(roomId);
+
+      const memMeeting = memoryMeetings.get(roomId);
+      if (memMeeting) {
+        memMeeting.status = "ended";
+        memMeeting.endedAt = new Date().toISOString();
+      }
+
+      const pool = getPool();
+      if (pool) {
+        try {
+          await pool.query(
+            "UPDATE meetings SET status = 'ended', ended_at = CURRENT_TIMESTAMP WHERE id = $1",
+            [roomId]
+          );
+        } catch (dbErr) {
+          console.warn("[Database] Could not mark meeting as ended in DB:", dbErr);
+        }
+      }
+
+      // Broadcast to all participants in the room
+      io.to(roomId).emit("meeting-ended-by-host", {
+        roomId,
+        reason: "Host closed the meeting",
+      });
+
+      socket.emit("meeting-ended-by-host", {
+        roomId,
+        reason: "Host closed the meeting",
+      });
+
+      roomParticipants.delete(roomId);
+      roomHosts.delete(roomId);
+    });
 
     // ─── 2. WEBRTC SIGNALING: OFFER ───────────────────────────
     socket.on(
@@ -308,14 +419,46 @@ export const setupSocket = (server: HttpServer): Server => {
     );
 
     // ─── 7. DISCONNECT & LEAVE ROOM ───────────────────────────
-    const handleLeave = () => {
+    const handleLeave = async () => {
       const userMeta = socketToRoom.get(socket.id);
       if (!userMeta) return;
 
-      const { roomId, userId, userName } = userMeta;
+      const { roomId, userId, userName, isHost } = userMeta;
       const roomMap = roomParticipants.get(roomId);
+      const host = roomHosts.get(roomId);
 
-      if (roomMap) {
+      // If the user who disconnected or left is the host:
+      if (isHost || (host && host.socketId === socket.id)) {
+        console.log(`[Host Left/Disconnected] "${userName}" left. Closing room "${roomId}".`);
+        closedMeetings.add(roomId);
+
+        const memMeeting = memoryMeetings.get(roomId);
+        if (memMeeting) {
+          memMeeting.status = "ended";
+          memMeeting.endedAt = new Date().toISOString();
+        }
+
+        const pool = getPool();
+        if (pool) {
+          try {
+            await pool.query(
+              "UPDATE meetings SET status = 'ended', ended_at = CURRENT_TIMESTAMP WHERE id = $1",
+              [roomId]
+            );
+          } catch (dbErr) {
+            console.warn("[Database] Could not mark meeting as ended on host disconnect:", dbErr);
+          }
+        }
+
+        // Notify all participants currently in the room
+        socket.to(roomId).emit("meeting-ended-by-host", {
+          roomId,
+          reason: "Host closed the meeting",
+        });
+
+        roomParticipants.delete(roomId);
+        roomHosts.delete(roomId);
+      } else if (roomMap) {
         roomMap.delete(socket.id);
         console.log(
           `[Room Left] "${userName}" (${socket.id}) exited "${roomId}". Remaining: ${roomMap.size}`

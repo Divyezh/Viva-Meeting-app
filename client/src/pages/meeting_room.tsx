@@ -1,7 +1,16 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
-import { Clock, Check, X, UserCheck, ShieldAlert, ArrowLeft, Sparkles } from "lucide-react";
+import {
+  Clock,
+  Check,
+  X,
+  UserCheck,
+  ShieldAlert,
+  ArrowLeft,
+  Sparkles,
+  PhoneOff,
+} from "lucide-react";
 import VideoGrid from "../components/meeting/video_grid";
 import MeetingHeader from "../components/meeting/meeting_header";
 import ControlBar from "../components/meeting/control_bar";
@@ -52,9 +61,10 @@ const MeetingRoom = () => {
   const currentUserAvatar = user?.imageUrl || "";
 
   // ─── Admission State (Waiting Room & Knock Flow) ─────────────
-  const [admissionStatus, setAdmissionStatus] = useState<"admitted" | "waiting" | "denied">(
-    isHost ? "admitted" : "waiting"
-  );
+  const [admissionStatus, setAdmissionStatus] = useState<
+    "admitted" | "waiting" | "denied" | "closed"
+  >(isHost ? "admitted" : "waiting");
+  const [closedReason, setClosedReason] = useState("Host closed the meeting");
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
 
   // ─── Sidebar / Drawer State ─────────────────────────────────
@@ -133,6 +143,18 @@ const MeetingRoom = () => {
       socket.connect();
     }
 
+    // Listen for host closing the meeting (applies to both host and guests)
+    const handleMeetingEnded = (data?: { reason?: string }) => {
+      leaveMeeting();
+      setAdmissionStatus("closed");
+      if (data?.reason) {
+        setClosedReason(data.reason);
+      }
+      localStorage.removeItem(`is_host_${cleanRoomId}`);
+    };
+
+    socket.on("meeting-ended-by-host", handleMeetingEnded);
+
     if (isHost) {
       // Host listens for admission requests from incoming guests
       const handleJoinRequestReceived = (request: JoinRequest) => {
@@ -177,6 +199,7 @@ const MeetingRoom = () => {
 
       socket.on("join-request-received", handleJoinRequestReceived);
       return () => {
+        socket.off("meeting-ended-by-host", handleMeetingEnded);
         socket.off("join-request-received", handleJoinRequestReceived);
       };
     } else {
@@ -189,7 +212,22 @@ const MeetingRoom = () => {
         isHost: false,
       });
 
-      const handleJoinResponse = ({ approved, reason }: { approved: boolean; reason?: string }) => {
+      const handleJoinResponse = ({
+        approved,
+        meetingClosed,
+        reason,
+      }: {
+        approved: boolean;
+        meetingClosed?: boolean;
+        reason?: string;
+      }) => {
+        if (meetingClosed) {
+          setAdmissionStatus("closed");
+          setClosedReason(reason || "Host closed the meeting");
+          leaveMeeting();
+          return;
+        }
+
         if (approved) {
           setAdmissionStatus("admitted");
           toast.success("Admitted to the meeting!", {
@@ -203,6 +241,7 @@ const MeetingRoom = () => {
 
       socket.on("join-response", handleJoinResponse);
       return () => {
+        socket.off("meeting-ended-by-host", handleMeetingEnded);
         socket.off("join-response", handleJoinResponse);
       };
     }
@@ -214,6 +253,7 @@ const MeetingRoom = () => {
     handleAdmitUser,
     handleDenyUser,
     isHost,
+    leaveMeeting,
   ]);
 
   // Dynamic participants list formed by local user + all connected peers
@@ -273,9 +313,13 @@ const MeetingRoom = () => {
   }, [isPanelOpen, activePanelTab]);
 
   const handleLeave = useCallback(() => {
+    if (isHost) {
+      socket.emit("host-close-meeting", { roomId: cleanRoomId });
+      localStorage.removeItem(`is_host_${cleanRoomId}`);
+    }
     leaveMeeting();
     navigate("/dashboard");
-  }, [leaveMeeting, navigate]);
+  }, [cleanRoomId, isHost, leaveMeeting, navigate]);
 
   // ─── 1. WAITING ROOM VIEW (GUEST WAITING FOR HOST ADMISSION) ─
   if (admissionStatus === "waiting") {
@@ -365,6 +409,51 @@ const MeetingRoom = () => {
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── 3. HOST CLOSED THE MEETING VIEW (CLEAN REAL-LOOK TEXT) ───
+  if (admissionStatus === "closed") {
+    return (
+      <div className="bg-app-gradient relative flex min-h-screen w-screen items-center justify-center p-4 overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
+        <Toaster position="top-center" />
+
+        {/* Ambient atmospheric glows */}
+        <div className="pointer-events-none absolute -top-40 left-1/3 h-137.5 w-137.5 rounded-full bg-emerald-500/10 blur-3xl opacity-80" />
+        <div className="pointer-events-none absolute -bottom-40 right-1/4 h-137.5 w-137.5 rounded-full bg-[#84cc16]/10 blur-3xl opacity-80" />
+
+        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#081307]/90 border border-emerald-900/40 p-8 text-center shadow-2xl backdrop-blur-2xl">
+          {/* Simple real icon */}
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-950/70 border border-emerald-800/50 text-emerald-400 shadow-lg">
+            <PhoneOff className="h-8 w-8 text-emerald-400" />
+          </div>
+
+          <h2 className="text-2xl font-bold tracking-tight text-white">Host closed the meeting</h2>
+          <p className="mt-2 text-xs leading-relaxed text-slate-400">
+            {closedReason || "The host has ended this meeting session."}
+          </p>
+
+          {/* Meeting details pill */}
+          <div className="mt-6 rounded-2xl bg-emerald-950/40 border border-emerald-800/30 p-4 text-left">
+            <div className="flex items-center justify-between border-b border-emerald-900/40 pb-2.5 mb-2.5">
+              <span className="text-xs text-emerald-300/60 font-medium">Meeting Code</span>
+              <span className="font-mono text-xs font-bold text-emerald-200">{cleanRoomId}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-emerald-300/60 font-medium">Status</span>
+              <span className="text-xs font-semibold text-red-400">Ended by Host</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#3f6212] py-3 text-xs font-bold text-white shadow-md hover:bg-[#365314] active:scale-95 transition-all"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Return to Dashboard
           </button>
         </div>
       </div>
