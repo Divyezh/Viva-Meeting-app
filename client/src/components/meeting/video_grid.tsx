@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { PeerStream } from "../../types";
 import VideoTile from "./video_tile";
 
@@ -5,6 +6,7 @@ interface VideoGridProps {
   localStream: MediaStream | null;
   peers: PeerStream[];
   localUser: {
+    userId?: string;
     userName: string;
     isMuted: boolean;
     isCameraOff: boolean;
@@ -15,7 +17,24 @@ interface VideoGridProps {
 }
 
 const VideoGrid = ({ localStream, peers, localUser, isScreenSharing = false }: VideoGridProps) => {
-  const totalParticipants = 1 + peers.length;
+  // Deduplicate peers by userId and filter out any duplicate of localUser
+  const uniquePeers = useMemo(() => {
+    const seenUserIds = new Set<string>();
+    return peers.filter((p) => {
+      if (localUser.userId && p.userId === localUser.userId) {
+        return false;
+      }
+      if (p.userId && seenUserIds.has(p.userId)) {
+        return false;
+      }
+      if (p.userId) {
+        seenUserIds.add(p.userId);
+      }
+      return true;
+    });
+  }, [peers, localUser.userId]);
+
+  const totalParticipants = 1 + uniquePeers.length;
 
   const getGridClasses = () => {
     switch (totalParticipants) {
@@ -36,10 +55,10 @@ const VideoGrid = ({ localStream, peers, localUser, isScreenSharing = false }: V
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div className="flex h-full w-full items-center justify-center p-3 sm:p-5 pb-28 sm:pb-32 overflow-y-auto">
       <div className={`grid h-full w-full gap-3 sm:gap-4 auto-rows-fr ${getGridClasses()}`}>
-        {/* Remote Connected Peer Tiles */}
-        {peers.map((peer) => (
+        {/* Remote Connected Peer Tiles (Deduplicated) */}
+        {uniquePeers.map((peer) => (
           <div key={peer.peerId} className="min-h-55 h-full w-full">
             <VideoTile
               userName={peer.userName}

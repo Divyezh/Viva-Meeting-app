@@ -168,12 +168,9 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
-        // Host is present: forward admission request to the host
+        // Host is present: forward admission request to the host only (no duplicate room broadcast)
         console.log(`[Join Request] "${userName}" (${socket.id}) requested to join "${roomId}"`);
         io.to(host.socketId).emit("join-request-received", reqItem);
-
-        // Also broadcast to the room so co-hosts can see
-        socket.to(roomId).emit("join-request-received", reqItem);
       }
     );
 
@@ -282,27 +279,49 @@ export const setupSocket = (server: HttpServer): Server => {
         }
 
         const roomMap = roomParticipants.get(roomId)!;
+        const effectiveUserId = userId || `user_${Date.now()}`;
 
         // Ensure host is recorded if not set
         if (isHost && !roomHosts.has(roomId)) {
           roomHosts.set(roomId, {
             socketId: socket.id,
-            userId: userId || `user_${Date.now()}`,
+            userId: effectiveUserId,
             userName: userName || "Host",
           });
         }
 
-        // Collect existing participants in this room to return to the new joiner
+        // Clean up any stale sockets in this room belonging to the same userId
+        roomMap.forEach((existingUser, existingSocketId) => {
+          if (existingSocketId !== socket.id && existingUser.userId === effectiveUserId) {
+            console.log(
+              `[Deduplicate] Purging stale socket ${existingSocketId} for user ${effectiveUserId}`
+            );
+            roomMap.delete(existingSocketId);
+            socketToRoom.delete(existingSocketId);
+            socket.to(roomId).emit("user-disconnected", {
+              socketId: existingSocketId,
+              userId: effectiveUserId,
+            });
+          }
+        });
+
+        // Collect existing participants in this room (deduplicated by userId)
         const existingUsers: SocketParticipant[] = [];
+        const seenUserIds = new Set<string>();
         roomMap.forEach((user, existingSocketId) => {
-          if (existingSocketId !== socket.id) {
+          if (
+            existingSocketId !== socket.id &&
+            user.userId !== effectiveUserId &&
+            !seenUserIds.has(user.userId)
+          ) {
+            seenUserIds.add(user.userId);
             existingUsers.push(user);
           }
         });
 
         const newUser: SocketParticipant = {
           socketId: socket.id,
-          userId: userId || `user_${Date.now()}`,
+          userId: effectiveUserId,
           userName: userName || "Participant",
           avatarUrl,
           isMuted,

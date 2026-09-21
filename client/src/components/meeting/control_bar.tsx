@@ -9,7 +9,6 @@ import {
   PhoneOff,
   FileText,
   Smile,
-  MoreVertical,
   Circle,
   Sliders,
 } from "lucide-react";
@@ -103,7 +102,7 @@ const ControlBar = ({
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 z-30 -translate-x-1/2 sm:bottom-6">
+    <div className="fixed bottom-2.5 sm:bottom-6 left-1/2 z-40 -translate-x-1/2 max-w-[98vw] px-1 pointer-events-auto">
       {/* Reactions Floating Popup Menu */}
       {showReactions && (
         <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-[#081307]/95 border border-emerald-800/50 px-3.5 py-1.5 backdrop-blur-xl shadow-2xl animate-fade-in">
@@ -272,24 +271,6 @@ const ControlBar = ({
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#84cc16] ring-2 ring-[#081307]" />
           </button>
         )}
-
-        {/* 11. More Options */}
-        <button
-          onClick={() =>
-            toast("Meeting encrypted with WebRTC DTLS-SRTP 🔐", {
-              style: {
-                background: "#081307",
-                color: "#fff",
-                border: "1px solid #365314",
-                borderRadius: "9999px",
-              },
-            })
-          }
-          className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white transition-all"
-          title="Meeting Info & Encryption"
-        >
-          <MoreVertical className="h-4.5 w-4.5" />
-        </button>
       </div>
     </div>
   );

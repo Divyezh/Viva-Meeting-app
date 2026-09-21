@@ -30,24 +30,36 @@ const ICE_SERVERS: RTCConfiguration = {
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
     { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: "stun:global.stun.twilio.com:3478" },
   ],
+  iceCandidatePoolSize: 10,
 };
 
 /**
- * Optimizes WebRTC Session Description Protocol (SDP) for Opus audio codec.
- * Forces 128kbps stereo high-fidelity voice transmission with In-Band FEC
- * (Forward Error Correction) to ensure crystal-clear mic voice with 0 packet loss distortion.
+ * Optimizes WebRTC Session Description Protocol (SDP) ONLY for the Opus audio codec.
+ * Never modifies video codec fmtp lines, preventing video decoder rejection on mobile devices.
  */
 export const optimizeSdpForVoice = (sdp?: string): string => {
   if (!sdp) return "";
-  return sdp.replace(/(a=fmtp:\d+\s+)([^\r\n]+)/g, (match, prefix, params) => {
-    let updated = params;
-    if (!updated.includes("stereo=")) updated += ";stereo=1;sprop-stereo=1";
-    if (!updated.includes("maxaveragebitrate=")) updated += ";maxaveragebitrate=128000";
-    if (!updated.includes("cbr=")) updated += ";cbr=1";
-    if (!updated.includes("useinbandfec=")) updated += ";useinbandfec=1";
-    return `${prefix}${updated}`;
-  });
+  const opusMatch = sdp.match(/a=rtpmap:(\d+)\s+opus\/48000/i);
+  if (!opusMatch) return sdp;
+  const opusPayload = opusMatch[1];
+
+  const fmtpRegex = new RegExp(`(a=fmtp:${opusPayload}\\s+)([^\\r\\n]+)`, "i");
+  if (fmtpRegex.test(sdp)) {
+    return sdp.replace(fmtpRegex, (_match, prefix, params) => {
+      let updated = params;
+      if (!updated.includes("stereo=")) updated += ";stereo=1;sprop-stereo=1";
+      if (!updated.includes("maxaveragebitrate=")) updated += ";maxaveragebitrate=128000";
+      if (!updated.includes("cbr=")) updated += ";cbr=1";
+      if (!updated.includes("useinbandfec=")) updated += ";useinbandfec=1";
+      return `${prefix}${updated}`;
+    });
+  }
+  return sdp;
 };
 
 export const useWebRTC = ({
@@ -68,6 +80,8 @@ export const useWebRTC = ({
 
   // References for WebRTC connections and media tracks
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingCandidates = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const remoteStreams = useRef<Map<string, MediaStream>>(new Map());
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -75,7 +89,6 @@ export const useWebRTC = ({
 
   // ─── Remote Speaking Detection Engine ────────────────────────
   const setupRemoteSpeakingDetection = useCallback((socketId: string, stream: MediaStream) => {
-    // Clean existing if re-attaching
     const existing = remoteAnalysers.current.get(socketId);
     if (existing) {
       cancelAnimationFrame(existing.animId);
@@ -129,7 +142,7 @@ export const useWebRTC = ({
     }
   }, []);
 
-  // Helper to add or update peer stream
+  // Helper to add or update peer stream with strict deduplication
   const setPeerStream = useCallback(
     (
       socketId: string,
@@ -142,17 +155,27 @@ export const useWebRTC = ({
         isCameraOff?: boolean;
       }
     ) => {
+      if (info.userId === currentUser.userId) {
+        return;
+      }
+
       setPeers((prev) => {
-        const index = prev.findIndex((p) => p.peerId === socketId);
+        const index = prev.findIndex((p) => p.peerId === socketId || p.userId === info.userId);
+        const prevPeer = index !== -1 ? prev[index] : null;
+
         const updatedPeer: PeerStream = {
           peerId: socketId,
-          stream: stream || (index !== -1 ? prev[index].stream : null),
+          stream: stream || prevPeer?.stream || null,
           userId: info.userId,
-          userName: info.userName,
-          avatarUrl: info.avatarUrl || "",
-          isMuted: info.isMuted ?? (index !== -1 ? prev[index].isMuted : false),
-          isCameraOff: info.isCameraOff ?? (index !== -1 ? prev[index].isCameraOff : false),
-          isSpeaking: index !== -1 ? prev[index].isSpeaking : false,
+          userName: info.userName || prevPeer?.userName || "Participant",
+          avatarUrl: info.avatarUrl || prevPeer?.avatarUrl || "",
+          isMuted:
+            typeof info.isMuted === "boolean" ? info.isMuted : (prevPeer?.isMuted ?? false),
+          isCameraOff:
+            typeof info.isCameraOff === "boolean"
+              ? info.isCameraOff
+              : (prevPeer?.isCameraOff ?? false),
+          isSpeaking: prevPeer?.isSpeaking || false,
         };
 
         if (index !== -1) {
@@ -164,15 +187,14 @@ export const useWebRTC = ({
         }
       });
 
-      // Attach audio speech level analysis to remote stream
       if (stream && stream.getAudioTracks().length > 0) {
         setupRemoteSpeakingDetection(socketId, stream);
       }
     },
-    [setupRemoteSpeakingDetection]
+    [currentUser.userId, setupRemoteSpeakingDetection]
   );
 
-  // ─── 1. Initialize Local Media Stream (Studio Mic Constraints) ──
+  // ─── 1. Initialize Local Media Stream ───────────────────────
   useEffect(() => {
     if (!enabled) return;
 
@@ -183,7 +205,6 @@ export const useWebRTC = ({
         let stream: MediaStream;
 
         try {
-          // Attempt Studio Crystal-Clear Microphone Settings (48kHz, Stereo, Noise & Echo cancellation)
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
               width: { ideal: 1280 },
@@ -199,7 +220,7 @@ export const useWebRTC = ({
             },
           });
         } catch (studioConstraintErr) {
-          console.warn("Studio constraints fallback to default mic:", studioConstraintErr);
+          console.warn("Studio constraints fallback to default media:", studioConstraintErr);
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
               width: { ideal: 1280 },
@@ -218,7 +239,19 @@ export const useWebRTC = ({
         stream.getAudioTracks().forEach((t) => (t.enabled = !initialMuted));
         stream.getVideoTracks().forEach((t) => (t.enabled = !initialCameraOff));
 
-        // Connect socket after local stream is acquired
+        // Attach tracks to any peer connections that may already exist
+        peerConnections.current.forEach((pc) => {
+          const senders = pc.getSenders();
+          stream.getTracks().forEach((track) => {
+            const sender = senders.find((s) => s.track?.kind === track.kind);
+            if (sender) {
+              sender.replaceTrack(track).catch(() => {});
+            } else {
+              pc.addTrack(track, stream);
+            }
+          });
+        });
+
         if (!socket.connected) {
           socket.connect();
         }
@@ -233,10 +266,9 @@ export const useWebRTC = ({
           isHost,
         });
 
-        // Howler sound cue on entering room
         soundEffects.playJoin();
 
-        // Initialize Web Audio level detection for local user speaking border
+        // Local speaking level detection
         try {
           const AudioContextClass =
             window.AudioContext ||
@@ -264,7 +296,6 @@ export const useWebRTC = ({
               const now = Date.now();
               const isSpeakingNow = average > 18;
 
-              // Only update if state changes and at least 200ms has elapsed to avoid flutter
               if (isSpeakingNow !== currentSpeakingState && now - lastSpeakingUpdate > 200) {
                 currentSpeakingState = isSpeakingNow;
                 lastSpeakingUpdate = now;
@@ -352,11 +383,29 @@ export const useWebRTC = ({
         });
       }
 
-      // Handle receiving remote tracks
+      // Handle receiving remote tracks (robust to sequential audio/video track arrivals)
       pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          setPeerStream(targetSocketId, event.streams[0], remoteInfo);
+        let stream = remoteStreams.current.get(targetSocketId);
+        if (!stream) {
+          stream = new MediaStream();
+          remoteStreams.current.set(targetSocketId, stream);
         }
+
+        if (event.streams && event.streams[0]) {
+          event.streams[0].getTracks().forEach((track) => {
+            if (!stream!.getTracks().some((t) => t.id === track.id)) {
+              stream!.addTrack(track);
+            }
+          });
+        } else if (event.track) {
+          if (!stream.getTracks().some((t) => t.id === event.track.id)) {
+            stream.addTrack(event.track);
+          }
+        }
+
+        // Wrap into new MediaStream instance so React state perceives updated tracks
+        const freshStream = new MediaStream(stream.getTracks());
+        setPeerStream(targetSocketId, freshStream, remoteInfo);
       };
 
       // Handle ICE Candidate generation
@@ -383,6 +432,8 @@ export const useWebRTC = ({
             remoteAnalysers.current.delete(targetSocketId);
           }
           peerConnections.current.delete(targetSocketId);
+          remoteStreams.current.delete(targetSocketId);
+          pendingCandidates.current.delete(targetSocketId);
           setPeers((prev) => prev.filter((p) => p.peerId !== targetSocketId));
         }
       };
@@ -396,13 +447,17 @@ export const useWebRTC = ({
   useEffect(() => {
     // A. Received existing peers in the room -> initiate WebRTC Offer to each
     const handleExistingUsers = async (users: RemotePeerInfo[]) => {
-      for (const user of users) {
+      // Filter out self
+      const remoteUsers = users.filter(
+        (u) => u.socketId !== socket.id && u.userId !== currentUser.userId
+      );
+
+      for (const user of remoteUsers) {
         const pc = createPeerConnection(user.socketId, user);
         setPeerStream(user.socketId, null, user);
 
         try {
           const offer = await pc.createOffer();
-          // Apply Opus 128kbps crystal-clear voice SDP optimization
           const optimizedSdp = optimizeSdpForVoice(offer.sdp);
           const finalOffer = new RTCSessionDescription({ type: offer.type, sdp: optimizedSdp });
           await pc.setLocalDescription(finalOffer);
@@ -426,8 +481,10 @@ export const useWebRTC = ({
 
     // B. A new user joined the room
     const handleUserJoined = (newUser: RemotePeerInfo) => {
+      if (newUser.socketId === socket.id || newUser.userId === currentUser.userId) {
+        return;
+      }
       setPeerStream(newUser.socketId, null, newUser);
-      // Play pleasant Howler join chime
       soundEffects.playJoin();
     };
 
@@ -441,13 +498,29 @@ export const useWebRTC = ({
       offer: RTCSessionDescriptionInit;
       callerInfo: RemotePeerInfo;
     }) => {
+      if (callerSocketId === socket.id || callerInfo.userId === currentUser.userId) {
+        return;
+      }
       const pc = createPeerConnection(callerSocketId, callerInfo);
       setPeerStream(callerSocketId, null, callerInfo);
 
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+        // Flush any ICE candidates that arrived before the remote description was set
+        const queued = pendingCandidates.current.get(callerSocketId);
+        if (queued && queued.length > 0) {
+          for (const cand of queued) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch (err) {
+              console.warn("Error applying queued ICE candidate:", err);
+            }
+          }
+          pendingCandidates.current.delete(callerSocketId);
+        }
+
         const answer = await pc.createAnswer();
-        // Apply Opus 128kbps crystal-clear voice SDP optimization
         const optimizedSdp = optimizeSdpForVoice(answer.sdp);
         const finalAnswer = new RTCSessionDescription({ type: answer.type, sdp: optimizedSdp });
         await pc.setLocalDescription(finalAnswer);
@@ -473,13 +546,26 @@ export const useWebRTC = ({
       if (pc) {
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+          // Flush any ICE candidates that arrived before the answer description was set
+          const queued = pendingCandidates.current.get(responderSocketId);
+          if (queued && queued.length > 0) {
+            for (const cand of queued) {
+              try {
+                await pc.addIceCandidate(new RTCIceCandidate(cand));
+              } catch (err) {
+                console.warn("Error applying queued ICE candidate:", err);
+              }
+            }
+            pendingCandidates.current.delete(responderSocketId);
+          }
         } catch (err) {
           console.error("Error setting remote description from answer:", err);
         }
       }
     };
 
-    // E. Incoming ICE Candidate
+    // E. Incoming ICE Candidate (with buffering for candidates that arrive early)
     const handleICECandidate = async ({
       senderSocketId,
       candidate,
@@ -488,11 +574,16 @@ export const useWebRTC = ({
       candidate: RTCIceCandidateInit;
     }) => {
       const pc = peerConnections.current.get(senderSocketId);
-      if (pc && candidate) {
+      if (!pc || !pc.remoteDescription || !pc.remoteDescription.type) {
+        if (!pendingCandidates.current.has(senderSocketId)) {
+          pendingCandidates.current.set(senderSocketId, []);
+        }
+        pendingCandidates.current.get(senderSocketId)!.push(candidate);
+      } else if (candidate) {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(candidate));
         } catch (err) {
-          console.error("Error adding ICE candidate:", err);
+          console.warn("Error adding ICE candidate:", err);
         }
       }
     };
@@ -536,9 +627,10 @@ export const useWebRTC = ({
         pc.close();
         peerConnections.current.delete(socketId);
       }
+      remoteStreams.current.delete(socketId);
+      pendingCandidates.current.delete(socketId);
       setPeers((prev) => prev.filter((p) => p.peerId !== socketId));
 
-      // Play pleasant Howler leave chime
       soundEffects.playLeave();
     };
 

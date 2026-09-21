@@ -25,23 +25,77 @@ const VideoTile = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Attach and play video track with automatic unmute listener
   useEffect(() => {
-    if (videoRef.current && stream && videoRef.current.srcObject !== stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
+    const videoEl = videoRef.current;
+    if (!videoEl || !stream) return;
+
+    if (videoEl.srcObject !== stream) {
+      videoEl.srcObject = stream;
     }
+    videoEl.play().catch(() => {});
+
+    const handleTrackChange = () => {
+      if (videoEl && videoEl.srcObject !== stream) {
+        videoEl.srcObject = stream;
+      }
+      videoEl?.play().catch(() => {});
+    };
+
+    stream.addEventListener("addtrack", handleTrackChange);
+    stream.addEventListener("removetrack", handleTrackChange);
+    stream.getVideoTracks().forEach((track) => {
+      track.addEventListener("unmute", handleTrackChange);
+    });
+
+    return () => {
+      stream.removeEventListener("addtrack", handleTrackChange);
+      stream.removeEventListener("removetrack", handleTrackChange);
+      stream.getVideoTracks().forEach((track) => {
+        track.removeEventListener("unmute", handleTrackChange);
+      });
+    };
   }, [stream]);
 
   // Ensure remote participant voice plays reliably through dedicated audio element
   useEffect(() => {
-    if (audioRef.current && stream && !isLocal) {
-      if (audioRef.current.srcObject !== stream) {
-        audioRef.current.srcObject = stream;
-        audioRef.current.play().catch((err) => {
-          console.debug("Remote audio play notice:", err);
-        });
-      }
+    const audioEl = audioRef.current;
+    if (!audioEl || !stream || isLocal) return;
+
+    if (audioEl.srcObject !== stream) {
+      audioEl.srcObject = stream;
     }
+    audioEl.play().catch((err) => {
+      console.debug("Remote audio play notice:", err);
+    });
+
+    const handleAudioTrack = () => {
+      if (audioEl && audioEl.srcObject !== stream) {
+        audioEl.srcObject = stream;
+      }
+      audioEl?.play().catch(() => {});
+    };
+
+    stream.addEventListener("addtrack", handleAudioTrack);
+    stream.getAudioTracks().forEach((track) => {
+      track.addEventListener("unmute", handleAudioTrack);
+    });
+
+    // Mobile browser autoplay policy unlock: resume audio on first touch or click
+    const handleUnlock = () => {
+      audioEl?.play().catch(() => {});
+    };
+    window.addEventListener("touchstart", handleUnlock, { once: true });
+    window.addEventListener("click", handleUnlock, { once: true });
+
+    return () => {
+      stream.removeEventListener("addtrack", handleAudioTrack);
+      stream.getAudioTracks().forEach((track) => {
+        track.removeEventListener("unmute", handleAudioTrack);
+      });
+      window.removeEventListener("touchstart", handleUnlock);
+      window.removeEventListener("click", handleUnlock);
+    };
   }, [stream, isLocal]);
 
   const getInitials = (name: string) => {
@@ -55,8 +109,7 @@ const VideoTile = ({
       .slice(0, 2);
   };
 
-  const hasVideoTrack =
-    stream && stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
+  const hasVideoTrack = stream && stream.getVideoTracks().length > 0;
   const showVideo = !isCameraOff && hasVideoTrack;
 
   return (
@@ -68,7 +121,15 @@ const VideoTile = ({
       }`}
     >
       {/* ─── Dedicated Audio Element for Remote Voice (Never muted or cut off) ─── */}
-      {!isLocal && <audio ref={audioRef} autoPlay playsInline className="hidden" />}
+      {!isLocal && (
+        <audio
+          ref={audioRef}
+          autoPlay
+          playsInline
+          className="sr-only"
+          aria-hidden="true"
+        />
+      )}
 
       {/* ─── Video Stream Element ─── */}
       <video

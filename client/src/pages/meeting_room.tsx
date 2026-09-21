@@ -167,42 +167,17 @@ const MeetingRoom = () => {
       // Host listens for admission requests from incoming guests
       const handleJoinRequestReceived = (request: JoinRequest) => {
         setJoinRequests((prev) => {
-          if (prev.some((r) => r.requesterSocketId === request.requesterSocketId)) {
+          if (
+            prev.some(
+              (r) =>
+                r.requesterSocketId === request.requesterSocketId ||
+                (r.userId && r.userId === request.userId)
+            )
+          ) {
             return prev;
           }
           return [...prev, request];
         });
-
-        toast(
-          (t) => (
-            <div className="flex items-center justify-between gap-3 text-xs">
-              <span className="font-semibold text-slate-800">
-                <strong>{request.userName}</strong> wants to join
-              </span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => {
-                    handleAdmitUser(request.requesterSocketId, request.userName);
-                    toast.dismiss(t.id);
-                  }}
-                  className="rounded-full bg-[#3f6212] px-2.5 py-1 font-bold text-white hover:bg-[#365314]"
-                >
-                  Admit
-                </button>
-                <button
-                  onClick={() => {
-                    handleDenyUser(request.requesterSocketId, request.userName);
-                    toast.dismiss(t.id);
-                  }}
-                  className="rounded-full bg-slate-200 px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-300"
-                >
-                  Deny
-                </button>
-              </div>
-            </div>
-          ),
-          { duration: 8000 }
-        );
       };
 
       socket.on("join-request-received", handleJoinRequestReceived);
@@ -478,7 +453,7 @@ const MeetingRoom = () => {
 
   // ─── 3. ACTIVE MEETING ROOM VIEW ─────────────────────────────
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#08120a] flex flex-col selection:bg-emerald-900 selection:text-emerald-100">
+    <div className="relative h-dvh w-screen overflow-hidden bg-[#08120a] flex flex-col selection:bg-emerald-900 selection:text-emerald-100">
       <Toaster position="top-center" />
 
       {/* ─── Host Admission Bar: Appears when guests are knocking ─── */}
@@ -538,14 +513,14 @@ const MeetingRoom = () => {
       <div className="relative flex-1 overflow-hidden flex">
         {/* Left Video Grid Area */}
         <div
-          className={`relative h-full flex-1 transition-all duration-300 ${
-            isPanelOpen ? "mr-0 lg:mr-95" : ""
-          }`}
+          className={`relative h-full flex-1 transition-all duration-300 ${isPanelOpen ? "mr-0 lg:mr-95" : ""
+            }`}
         >
           <VideoGrid
             localStream={localStream}
             peers={peers}
             localUser={{
+              userId: currentUserId,
               userName: currentUserName,
               isMuted,
               isCameraOff,
