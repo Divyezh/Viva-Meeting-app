@@ -4,10 +4,54 @@ import { ClerkProvider } from "@clerk/clerk-react";
 import App from "./App";
 import "./index.css";
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const PUBLISHABLE_KEY =
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  "pk_test_ZW5hYmxlZC1zaGFkLTY1ODkuY2xlcmsuYWNjb3VudHMuZGV2JA";
 
-if (!PUBLISHABLE_KEY) {
-  console.warn("Missing VITE_CLERK_PUBLISHABLE_KEY in environment variables.");
+if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
+  console.warn(
+    "Using fallback Clerk publishable key. For production, set VITE_CLERK_PUBLISHABLE_KEY in Vercel Environment Variables."
+  );
+}
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("React application error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#f6faf5] p-6 text-center text-slate-800">
+          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white p-8 shadow-xl">
+            <h2 className="text-xl font-bold text-red-600">Application Error</h2>
+            <p className="mt-3 text-sm text-slate-600">
+              {this.state.error?.message || "An unexpected error occurred while loading the app."}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-6 rounded-xl bg-[#3f6212] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#365314]"
+            >
+              Reload Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const clerkAppearance = {
@@ -58,12 +102,14 @@ const clerkAppearance = {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ClerkProvider
-      publishableKey={PUBLISHABLE_KEY || ""}
-      afterSignOutUrl="/login"
-      appearance={clerkAppearance}
-    >
-      <App />
-    </ClerkProvider>
+    <ErrorBoundary>
+      <ClerkProvider
+        publishableKey={PUBLISHABLE_KEY}
+        afterSignOutUrl="/login"
+        appearance={clerkAppearance}
+      >
+        <App />
+      </ClerkProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
