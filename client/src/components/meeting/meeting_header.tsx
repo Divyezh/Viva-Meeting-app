@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Copy, Check, Video, ChevronDown } from "lucide-react";
+import { Copy, Check, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import BrandLogo from "../brand_logo";
 
 interface MeetingHeaderProps {
   roomId: string;
@@ -33,19 +34,30 @@ const MeetingHeader = ({
   }).format(new Date());
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/meeting/${roomId}`);
+    const fullUrl = `${window.location.origin}/meeting/${roomId}`;
+    navigator.clipboard.writeText(fullUrl);
     setCopied(true);
     toast.success("Meeting link copied to clipboard!", {
+      duration: 3000,
       style: {
-        background: "#ffffff",
-        color: "#142417",
-        border: "1px solid #d1fae5",
-        borderRadius: "9999px",
-        fontSize: "13px",
+        background: "#081307",
+        color: "#ffffff",
+        border: "1px solid rgba(74, 222, 128, 0.3)",
       },
-      iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
     });
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(roomId);
+    toast.success(`Meeting code "${roomId}" copied!`, {
+      duration: 2500,
+      style: {
+        background: "#081307",
+        color: "#ffffff",
+        border: "1px solid rgba(74, 222, 128, 0.3)",
+      },
+    });
   };
 
   const getInitials = (name: string) => {
@@ -68,8 +80,8 @@ const MeetingHeader = ({
           title="Back to Dashboard"
           className="flex items-center gap-2 group transition-transform hover:scale-105"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-[#3f6212] to-[#65a30d] shadow-md shadow-lime-950/40">
-            <Video className="h-5 w-5 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-950/80 border border-emerald-700/40 shadow-md shadow-black/40 group-hover:border-emerald-500/60">
+            <BrandLogo className="h-5.5 w-5.5" color="#84cc16" />
           </div>
           <span className="hidden text-lg font-bold tracking-tight text-white sm:inline-block">
             VIVA<span className="text-[#84cc16]">.</span>

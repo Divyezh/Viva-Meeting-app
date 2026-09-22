@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Video, X, User, Keyboard, Mic, MicOff, VideoOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import BrandLogo from "../brand_logo";
 
 interface JoinMeetingModalProps {
   isOpen: boolean;
@@ -72,8 +73,8 @@ const JoinMeetingModal = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-emerald-900/10 pb-4 mb-6 relative">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-[#3f6212] to-[#65a30d] shadow-md shadow-lime-900/20">
-              <Video className="h-5 w-5 text-white" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200/80 shadow-md shadow-lime-900/10">
+              <BrandLogo className="h-6 w-6" color="#4d7c0f" />
             </div>
             <div>
               <div className="flex items-center gap-2">

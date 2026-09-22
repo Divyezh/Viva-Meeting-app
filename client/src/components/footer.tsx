@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { Shield, Scale } from "lucide-react";
+import BrandLogo from "./brand_logo";
 
 const Footer = () => {
   return (
     <footer className="py-8 px-4 relative z-10 border-t border-emerald-900/20 bg-black/10 backdrop-blur-xs">
       <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-200/70">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <BrandLogo className="h-4.5 w-4.5" color="#84cc16" />
           <span className="font-semibold text-white tracking-tight">VIVA<span className="text-[#84cc16]">.</span></span>
           <span>© {new Date().getFullYear()} All rights reserved.</span>
         </div>

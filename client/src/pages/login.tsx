@@ -1,6 +1,7 @@
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { Navigate, Link } from "react-router-dom";
-import { Video, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
+import BrandLogo from "../components/brand_logo";
 import usePageSEO from "../hooks/usePageSEO";
 
 const Login = () => {
@@ -32,8 +33,8 @@ const Login = () => {
       <div className="relative w-full max-w-md flex flex-col items-center">
         {/* Brand Header */}
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-[#3f6212] to-[#65a30d] shadow-lg shadow-lime-900/25">
-            <Video className="h-6 w-6 text-white" />
+          <div className="mb-3 flex h-13 w-13 items-center justify-center rounded-2xl bg-white/90 border border-emerald-200/80 shadow-lg shadow-lime-900/10 backdrop-blur-md">
+            <BrandLogo className="h-8 w-8" color="#4d7c0f" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Viva Meeting<span className="text-[#65a30d]">.</span>

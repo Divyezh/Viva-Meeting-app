@@ -1,4 +1,4 @@
-import { Video } from "lucide-react";
+import BrandLogo from "./brand_logo";
 
 interface LoaderProps {
   message?: string;
@@ -10,10 +10,10 @@ const Loader = ({ message = "Loading your workspace..." }: LoaderProps) => {
       {/* Animated logo */}
       <div className="relative mb-8">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-24 w-24 rounded-full border-2 border-brand-200 animate-pulse-soft" />
+          <div className="h-24 w-24 rounded-full border-2 border-emerald-200 animate-pulse" />
         </div>
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3f6212] shadow-lg shadow-lime-900/20">
-          <Video className="h-8 w-8 text-white" />
+        <div className="relative flex h-18 w-18 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200/80 shadow-lg shadow-lime-900/15">
+          <BrandLogo className="h-10 w-10" color="#4d7c0f" />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import { Video, LayoutDashboard, Clock, CreditCard } from "lucide-react";
+import { LayoutDashboard, Clock, CreditCard } from "lucide-react";
 import { SignedIn, SignedOut, UserButton, SignInButton, useUser } from "@clerk/clerk-react";
+import BrandLogo from "./brand_logo";
 
 const navLinks = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -8,10 +9,14 @@ const navLinks = [
   { name: "Pricing", path: "/pricing", icon: CreditCard },
 ];
 
-const Navbar = () => {
+interface NavbarProps {
+  onOpenNewMeeting?: () => void;
+  onOpenJoinMeeting?: () => void;
+}
+
+const Navbar = ({ onOpenNewMeeting: _onOpenNewMeeting, onOpenJoinMeeting: _onOpenJoinMeeting }: NavbarProps) => {
   const location = useLocation();
   const { user } = useUser();
-
   const displayName = user?.fullName || user?.firstName || "Guest";
 
   return (
@@ -21,10 +26,10 @@ const Navbar = () => {
         <div className="flex items-center gap-6">
           <Link
             to="/dashboard"
-            className="flex items-center gap-2.5 transition-transform hover:scale-105 active:scale-95"
+            className="flex items-center gap-2.5 transition-transform hover:scale-105 active:scale-95 group"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-[#3f6212] to-[#65a30d] shadow-md shadow-lime-900/20">
-              <Video className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 shadow-xs shadow-lime-900/10 group-hover:border-emerald-300">
+              <BrandLogo className="h-5.5 w-5.5" color="#4d7c0f" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
               VIVA<span className="text-[#65a30d]"> Meeting</span>

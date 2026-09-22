@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Footer from "../components/footer";
+import BrandLogo from "../components/brand_logo";
 import usePageSEO from "../hooks/usePageSEO";
 
 const sections = [
@@ -84,8 +85,8 @@ const PrivacyPolicy = () => {
             <div className="h-4 w-px bg-emerald-900/15 hidden sm:block" />
 
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-[#3f6212] to-[#65a30d] text-white shadow-xs">
-                <Shield className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 shadow-xs">
+                <BrandLogo className="h-5 w-5" color="#4d7c0f" />
               </div>
               <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900">
                 VIVA <span className="text-[#65a30d]">Legal</span>
