@@ -55,6 +55,10 @@ app.get("/", (_req, res) => {
   });
 });
 
+app.get("/googled1a697e54b4ff7a7.html", (_req, res) => {
+  res.type("text/html").send("google-site-verification: googled1a697e54b4ff7a7.html");
+});
+
 // ─── API Routes ───────────────────────────────────────────────
 app.use("/api/meetings", meetingRoutes);
 app.use("/api/payment", paymentRoutes);

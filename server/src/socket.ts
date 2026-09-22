@@ -153,7 +153,14 @@ export const setupSocket = (server: HttpServer): Server => {
         if (!pendingJoinRequests.has(roomId)) {
           pendingJoinRequests.set(roomId, new Map());
         }
-        pendingJoinRequests.get(roomId)!.set(socket.id, reqItem);
+        const roomPending = pendingJoinRequests.get(roomId)!;
+        // Clean up any stale socket entries for the same userId (e.g. on socket reconnect)
+        for (const [oldSockId, existing] of roomPending.entries()) {
+          if (existing.userId === userId && oldSockId !== socket.id) {
+            roomPending.delete(oldSockId);
+          }
+        }
+        roomPending.set(socket.id, reqItem);
 
         // If host has not yet entered the room, keep guest in waiting room
         if (!host) {
@@ -527,10 +534,18 @@ export const setupSocket = (server: HttpServer): Server => {
 
     // ─── 7. DISCONNECT & LEAVE ROOM ───────────────────────────
     const handleLeave = async () => {
-      // Remove any pending join request by this socket
-      for (const reqs of pendingJoinRequests.values()) {
+      // Remove any pending join request by this socket and inform host
+      for (const [rId, reqs] of pendingJoinRequests.entries()) {
         if (reqs.has(socket.id)) {
+          const removedReq = reqs.get(socket.id);
           reqs.delete(socket.id);
+          const host = roomHosts.get(rId);
+          if (host && removedReq) {
+            io.to(host.socketId).emit("join-request-cancelled", {
+              requesterSocketId: socket.id,
+              userId: removedReq.userId,
+            });
+          }
         }
       }
 

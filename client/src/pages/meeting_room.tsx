@@ -18,6 +18,7 @@ import TranscriptPanel, { type ParticipantItem } from "../components/meeting/tra
 import AudioSettingsModal from "../components/meeting/audio_settings_modal";
 import { useWebRTC } from "../hooks/useWebRTC";
 import socket from "../config/socket";
+import soundEffects from "../utils/soundEffects";
 import { useUser } from "@clerk/clerk-react";
 
 interface JoinRequest {
@@ -26,6 +27,7 @@ interface JoinRequest {
   userName: string;
   avatarUrl?: string;
   roomId: string;
+  createdAt: number;
 }
 
 const MeetingRoom = () => {
@@ -35,12 +37,15 @@ const MeetingRoom = () => {
   const navigate = useNavigate();
   const { user } = useUser();
 
-  // Bulletproof host detection: query param (?host=true) takes precedence, fallback to localStorage
+  // Bulletproof host detection: query param (?host=true) takes precedence, fallback to isolated sessionStorage
   const isHost = useMemo(() => {
     const fromQuery = searchParams.get("host") === "true";
-    const fromStorage = localStorage.getItem(`is_host_${cleanRoomId}`) === "true";
+    const fromStorage =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem(`is_host_${cleanRoomId}`) === "true"
+        : false;
     if (fromQuery) {
-      localStorage.setItem(`is_host_${cleanRoomId}`, "true");
+      sessionStorage.setItem(`is_host_${cleanRoomId}`, "true");
       return true;
     }
     return fromStorage;
@@ -144,6 +149,25 @@ const MeetingRoom = () => {
     [cleanRoomId]
   );
 
+  // ─── 60-Second Auto-Expire & Live Countdown Tick for Join Requests ─
+  const [, setTimerTick] = useState(0);
+  useEffect(() => {
+    if (!isHost || joinRequests.length === 0) return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      // Remove any requests that reach 60 seconds (ample time for host to decide)
+      setJoinRequests((prev) => {
+        const remaining = prev.filter((r) => now - r.createdAt < 60000);
+        return remaining.length !== prev.length ? remaining : prev;
+      });
+      // Re-render each second to update the smooth countdown bar and seconds display
+      setTimerTick((t) => t + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isHost, joinRequests.length]);
+
   // ─── Socket Signaling for Admission & Knock Flow ────────────
   useEffect(() => {
     if (!socket.connected) {
@@ -158,6 +182,7 @@ const MeetingRoom = () => {
       if (data?.reason) {
         setClosedReason(data.reason);
       }
+      sessionStorage.removeItem(`is_host_${cleanRoomId}`);
       localStorage.removeItem(`is_host_${cleanRoomId}`);
     };
 
@@ -165,35 +190,75 @@ const MeetingRoom = () => {
 
     if (isHost) {
       // Host listens for admission requests from incoming guests
-      const handleJoinRequestReceived = (request: JoinRequest) => {
+      const handleJoinRequestReceived = (request: {
+        requesterSocketId: string;
+        userId: string;
+        userName: string;
+        avatarUrl?: string;
+        roomId: string;
+      }) => {
+        soundEffects.playJoin(); // Play clear audio cue to alert the host!
+        const fullRequest: JoinRequest = {
+          ...request,
+          createdAt: Date.now(),
+        };
+
         setJoinRequests((prev) => {
-          if (
-            prev.some(
-              (r) =>
-                r.requesterSocketId === request.requesterSocketId ||
-                (r.userId && r.userId === request.userId)
-            )
-          ) {
-            return prev;
-          }
-          return [...prev, request];
+          // Replace or deduplicate requests from the same user/socket
+          const filtered = prev.filter(
+            (r) =>
+              r.requesterSocketId !== request.requesterSocketId &&
+              (!request.userId || r.userId !== request.userId)
+          );
+          return [...filtered, fullRequest];
         });
       };
 
+      // Listen for guest cancelling or disconnecting while waiting
+      const handleJoinRequestCancelled = ({
+        requesterSocketId,
+        userId,
+      }: {
+        requesterSocketId: string;
+        userId: string;
+      }) => {
+        setJoinRequests((prev) =>
+          prev.filter(
+            (r) =>
+              r.requesterSocketId !== requesterSocketId &&
+              (!userId || r.userId !== userId)
+          )
+        );
+      };
+
       socket.on("join-request-received", handleJoinRequestReceived);
+      socket.on("join-request-cancelled", handleJoinRequestCancelled);
       return () => {
         socket.off("meeting-ended-by-host", handleMeetingEnded);
         socket.off("join-request-received", handleJoinRequestReceived);
+        socket.off("join-request-cancelled", handleJoinRequestCancelled);
       };
     } else {
       // Guest emits request to join
-      socket.emit("request-join", {
-        roomId: cleanRoomId,
-        userId: currentUserId,
-        userName: currentUserName,
-        avatarUrl: currentUserAvatar,
-        isHost: false,
-      });
+      const sendJoinRequest = () => {
+        socket.emit("request-join", {
+          roomId: cleanRoomId,
+          userId: currentUserId,
+          userName: currentUserName,
+          avatarUrl: currentUserAvatar,
+          isHost: false,
+        });
+      };
+
+      sendJoinRequest();
+
+      // If socket reconnects while waiting, automatically re-request admission
+      const handleSocketReconnect = () => {
+        if (admissionStatus === "waiting") {
+          sendJoinRequest();
+        }
+      };
+      socket.on("connect", handleSocketReconnect);
 
       const handleJoinResponse = ({
         approved,
@@ -234,6 +299,7 @@ const MeetingRoom = () => {
       return () => {
         socket.off("meeting-ended-by-host", handleMeetingEnded);
         socket.off("join-response", handleJoinResponse);
+        socket.off("connect", handleSocketReconnect);
       };
     }
   }, [
@@ -245,6 +311,7 @@ const MeetingRoom = () => {
     handleDenyUser,
     isHost,
     leaveMeeting,
+    admissionStatus,
   ]);
 
   // Dynamic participants list formed by local user + all connected peers
@@ -306,6 +373,7 @@ const MeetingRoom = () => {
   const handleLeave = useCallback(() => {
     if (isHost) {
       socket.emit("host-close-meeting", { roomId: cleanRoomId });
+      sessionStorage.removeItem(`is_host_${cleanRoomId}`);
       localStorage.removeItem(`is_host_${cleanRoomId}`);
     }
     leaveMeeting();
@@ -456,42 +524,71 @@ const MeetingRoom = () => {
     <div className="relative h-dvh w-screen overflow-hidden bg-[#08120a] flex flex-col selection:bg-emerald-900 selection:text-emerald-100">
       <Toaster position="top-center" />
 
-      {/* ─── Host Admission Bar: Appears when guests are knocking ─── */}
+      {/* ─── Host Admission Bar: Appears when guests are knocking (60s timer with Decline button) ─── */}
       {isHost && joinRequests.length > 0 && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-md px-4 animate-scale-up">
-          {joinRequests.map((req) => (
-            <div
-              key={req.requesterSocketId}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-[#0a1b0e]/95 border border-emerald-700/60 p-3 text-white shadow-2xl backdrop-blur-xl ring-2 ring-lime-500/20"
-            >
-              <div className="flex items-center gap-2.5 truncate">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-tr from-[#3f6212] to-[#65a30d] text-xs font-bold text-white">
-                  <UserCheck className="h-4 w-4" />
-                </div>
-                <div className="truncate">
-                  <div className="text-xs font-bold text-white truncate">{req.userName}</div>
-                  <div className="text-[10px] text-emerald-300/70">Wants to join this call</div>
-                </div>
-              </div>
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2.5 w-full max-w-lg px-4 animate-scale-up">
+          {joinRequests.map((req) => {
+            const elapsed = Date.now() - req.createdAt;
+            const remainingSec = Math.max(1, Math.ceil((60000 - elapsed) / 1000));
+            const progressPercent = Math.max(0, Math.min(100, (remainingSec / 60) * 100));
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => handleAdmitUser(req.requesterSocketId, req.userName)}
-                  className="flex items-center gap-1 rounded-full bg-[#3f6212] px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-[#365314] active:scale-95 transition-all"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                  Admit
-                </button>
-                <button
-                  onClick={() => handleDenyUser(req.requesterSocketId, req.userName)}
-                  className="flex items-center justify-center h-7 w-7 rounded-full bg-emerald-950 border border-emerald-800/60 text-slate-400 hover:text-red-400 hover:border-red-800/60 active:scale-95 transition-all"
-                  title="Deny Request"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+            return (
+              <div
+                key={req.requesterSocketId}
+                className="relative overflow-hidden rounded-2xl bg-[#08170c]/98 border border-emerald-500/40 p-3.5 text-white shadow-2xl backdrop-blur-2xl ring-1 ring-lime-400/25"
+              >
+                {/* 60s Animated Countdown Progress Bar at the top */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-950/80 overflow-hidden">
+                  <div
+                    className="h-full bg-linear-to-r from-[#84cc16] to-emerald-400 transition-all duration-1000 ease-linear"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-tr from-[#3f6212] to-[#65a30d] text-xs font-bold text-white shadow-md shadow-lime-950/40">
+                      <UserCheck className="h-4.5 w-4.5" />
+                    </div>
+                    <div className="truncate">
+                      <div className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-2">
+                        <span>{req.userName}</span>
+                        <span className="text-[10px] font-mono text-emerald-400/90 font-semibold bg-emerald-950/80 border border-emerald-800/60 px-1.5 py-0.5 rounded-full">
+                          {remainingSec}s
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-emerald-300/70 flex items-center gap-1.5 mt-0.5">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-lime-400 animate-ping" />
+                        <span>Wants to join this meeting</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Admit Button */}
+                    <button
+                      onClick={() => handleAdmitUser(req.requesterSocketId, req.userName)}
+                      className="flex items-center gap-1.5 rounded-full bg-[#3f6212] hover:bg-[#365314] px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:shadow-lime-900/40 active:scale-95 transition-all cursor-pointer"
+                      title="Admit to Meeting"
+                    >
+                      <Check className="h-3.5 w-3.5 text-lime-300" />
+                      <span>Admit</span>
+                    </button>
+
+                    {/* Decline Button */}
+                    <button
+                      onClick={() => handleDenyUser(req.requesterSocketId, req.userName)}
+                      className="flex items-center gap-1.5 rounded-full bg-red-950/80 border border-red-700/60 hover:bg-red-900 hover:border-red-500 px-3.5 py-1.5 text-xs font-bold text-red-200 hover:text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                      title="Decline Request"
+                    >
+                      <X className="h-3.5 w-3.5 text-red-400" />
+                      <span>Decline</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

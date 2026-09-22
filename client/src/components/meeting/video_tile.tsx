@@ -26,9 +26,21 @@ const VideoTile = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Attach and play video track with automatic unmute listener
+  // NOTE: Video elements in the grid must ALWAYS be muted (DOM + JSX) so they only render video frames.
+  // This prevents acoustic feedback loops on the local mic and eliminates duplicate audio playback for remote peers.
   useEffect(() => {
     const videoEl = videoRef.current;
-    if (!videoEl || !stream) return;
+    if (!videoEl) return;
+
+    // Strict DOM-level muting: React's JSX `muted` attribute alone does not guarantee audio track muting in WebKit/Blink
+    videoEl.muted = true;
+    videoEl.defaultMuted = true;
+    videoEl.volume = 0;
+
+    if (!stream) {
+      videoEl.srcObject = null;
+      return;
+    }
 
     if (videoEl.srcObject !== stream) {
       videoEl.srcObject = stream;
@@ -54,13 +66,25 @@ const VideoTile = ({
       stream.getVideoTracks().forEach((track) => {
         track.removeEventListener("unmute", handleTrackChange);
       });
+      if (videoEl) {
+        videoEl.srcObject = null;
+      }
     };
   }, [stream]);
 
-  // Ensure remote participant voice plays reliably through dedicated audio element
+  // Ensure remote participant voice plays reliably through dedicated audio element ONLY
   useEffect(() => {
     const audioEl = audioRef.current;
-    if (!audioEl || !stream || isLocal) return;
+    if (!audioEl || isLocal) return;
+
+    if (!stream) {
+      audioEl.srcObject = null;
+      return;
+    }
+
+    // Remote audio element must be unmuted and at full volume
+    audioEl.muted = false;
+    audioEl.volume = 1;
 
     if (audioEl.srcObject !== stream) {
       audioEl.srcObject = stream;
@@ -95,6 +119,9 @@ const VideoTile = ({
       });
       window.removeEventListener("touchstart", handleUnlock);
       window.removeEventListener("click", handleUnlock);
+      if (audioEl) {
+        audioEl.srcObject = null;
+      }
     };
   }, [stream, isLocal]);
 
@@ -120,7 +147,7 @@ const VideoTile = ({
           : "hover:border-emerald-700/50"
       }`}
     >
-      {/* ─── Dedicated Audio Element for Remote Voice (Never muted or cut off) ─── */}
+      {/* ─── Dedicated Audio Element for Remote Voice (Never duplicated with video element) ─── */}
       {!isLocal && (
         <audio
           ref={audioRef}
@@ -131,12 +158,12 @@ const VideoTile = ({
         />
       )}
 
-      {/* ─── Video Stream Element ─── */}
+      {/* ─── Video Stream Element (Visual ONLY - Always muted to prevent acoustic feedback loop) ─── */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
-        muted={isLocal} // Always mute local video playback to avoid acoustic feedback loop
+        muted={true}
         className={`h-full w-full object-cover ${
           showVideo ? "opacity-100" : "opacity-0 absolute"
         } ${isLocal && !isScreenSharing ? "scale-x-[-1]" : ""}`}

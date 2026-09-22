@@ -39,8 +39,10 @@ const ICE_SERVERS: RTCConfiguration = {
 };
 
 /**
- * Optimizes WebRTC Session Description Protocol (SDP) ONLY for the Opus audio codec.
- * Never modifies video codec fmtp lines, preventing video decoder rejection on mobile devices.
+ * Optimizes WebRTC Session Description Protocol (SDP) for voice clarity and echo prevention.
+ * NOTE: For voice meetings, stereo MUST be set to 0. Forcing stereo=1 disables WebRTC's
+ * built-in Acoustic Echo Cancellation (AEC) and Noise Suppression (NS), causing howling feedback loops.
+ * Enabling usedtx=1 (Discontinuous Transmission) silences transmission when no one speaks.
  */
 export const optimizeSdpForVoice = (sdp?: string): string => {
   if (!sdp) return "";
@@ -52,10 +54,13 @@ export const optimizeSdpForVoice = (sdp?: string): string => {
   if (fmtpRegex.test(sdp)) {
     return sdp.replace(fmtpRegex, (_match, prefix, params) => {
       let updated = params;
-      if (!updated.includes("stereo=")) updated += ";stereo=1;sprop-stereo=1";
-      if (!updated.includes("maxaveragebitrate=")) updated += ";maxaveragebitrate=128000";
+      // Remove any previously forced stereo flags that break AEC
+      updated = updated.replace(/stereo=1/g, "stereo=0").replace(/sprop-stereo=1/g, "sprop-stereo=0");
+      if (!updated.includes("stereo=")) updated += ";stereo=0;sprop-stereo=0";
+      if (!updated.includes("maxaveragebitrate=")) updated += ";maxaveragebitrate=64000";
       if (!updated.includes("cbr=")) updated += ";cbr=1";
       if (!updated.includes("useinbandfec=")) updated += ";useinbandfec=1";
+      if (!updated.includes("usedtx=")) updated += ";usedtx=1"; // DTX silences background noise/vibrations when no one is talking
       return `${prefix}${updated}`;
     });
   }
@@ -212,11 +217,11 @@ export const useWebRTC = ({
               facingMode: "user",
             },
             audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-              sampleRate: 48000,
-              channelCount: 2,
+              echoCancellation: { ideal: true },
+              noiseSuppression: { ideal: true },
+              autoGainControl: { ideal: true },
+              sampleRate: { ideal: 48000 },
+              channelCount: { ideal: 1 }, // Mono capture is critical for hardware echo cancellation
             },
           });
         } catch (studioConstraintErr) {
@@ -227,7 +232,11 @@ export const useWebRTC = ({
               height: { ideal: 720 },
               facingMode: "user",
             },
-            audio: true,
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
           });
         }
 
