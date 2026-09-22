@@ -27,7 +27,7 @@ const Navbar = () => {
               <Video className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
-              Meetup<span className="text-[#65a30d]">.</span>
+              VIVA<span className="text-[#65a30d]"> Meeting</span>
             </span>
           </Link>
 

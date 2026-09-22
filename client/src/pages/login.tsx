@@ -1,6 +1,7 @@
 import { SignIn, useAuth } from "@clerk/clerk-react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { Video, Shield } from "lucide-react";
+import usePageSEO from "../hooks/usePageSEO";
 
 const Login = () => {
   const { isSignedIn } = useAuth();
@@ -9,6 +10,12 @@ const Login = () => {
   if (isSignedIn) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  usePageSEO({
+    title: "Sign In - Viva Meeting",
+    description: "Sign in to Viva Meeting to start instant encrypted video calls, manage meetings, and collaborate seamlessly.",
+    canonicalPath: "/login",
+  });
 
   return (
     <div className="bg-app-gradient relative flex min-h-screen items-center justify-center p-4 py-12 overflow-hidden selection:bg-emerald-100 selection:text-emerald-900">
@@ -29,9 +36,9 @@ const Login = () => {
             <Video className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Meetup<span className="text-[#65a30d]">.</span>
+            Viva Meeting<span className="text-[#65a30d]">.</span>
           </h1>
-          <p className="mt-1 text-xs text-slate-500">Ultra-low latency WebRTC video conferencing</p>
+          <p className="mt-1 text-xs text-slate-500">Ultra-low latency HD video conferencing</p>
         </div>
 
         {/* Official Clerk Sign In Component */}
@@ -45,8 +52,21 @@ const Login = () => {
           />
         </div>
 
+        {/* DPDP Act 2023 Statutory Consent & Terms links */}
+        <div className="mt-4 text-center text-[11px] text-slate-500 max-w-xs leading-normal">
+          By signing in, you agree to our{" "}
+          <Link to="/terms" className="text-[#3f6212] font-semibold hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="text-[#3f6212] font-semibold hover:underline">
+            Privacy Policy
+          </Link>{" "}
+          governed by the DPDP Act, 2023 (India).
+        </div>
+
         {/* Security badge */}
-        <div className="mt-6 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+        <div className="mt-4 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
           <Shield className="h-3.5 w-3.5 text-[#4d7c0f]" />
           <span>Secured by Clerk Authentication & End-to-End WebRTC</span>
         </div>

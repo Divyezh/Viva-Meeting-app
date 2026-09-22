@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check } from "lucide-react";
+import usePageSEO from "../hooks/usePageSEO";
 
 const freeFeatures = [
   "Up to 4 participants",
@@ -20,6 +21,13 @@ const premiumFeatures = [
 ];
 
 const Pricing = () => {
+  usePageSEO({
+    title: "Pricing & Plans - Free & Pro | Viva Meeting",
+    description:
+      "Compare affordable Viva Meeting plans. Free plan with 40-minute HD video calling or Pro plan with unlimited group conferences and recordings.",
+    canonicalPath: "/pricing",
+  });
+
   const [isAnnual, setIsAnnual] = useState(false);
 
   return (
@@ -31,7 +39,7 @@ const Pricing = () => {
             Upgrade your <span className="text-[#4d7c0f]">plan.</span>
           </h1>
           <p className="mx-auto max-w-lg text-sm text-slate-600 sm:text-base">
-            Choose the plan that's right for you and unlock all the features of VIVA.
+            Choose the plan that's right for you and unlock all the features of Viva Meeting.
           </p>
 
           {/* Annual Toggle */}

@@ -1,0 +1,18 @@
+{
+  "name": "Viva Meeting - HD Video Calling",
+  "short_name": "Viva Meeting",
+  "description": "Secure, high-definition video conferencing and instant collaboration with Viva Meeting.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#081307",
+  "theme_color": "#3f6212",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "communication", "business"]
+}

@@ -5,6 +5,7 @@ import { useUser } from "@clerk/clerk-react";
 import { getSavedMeetings } from "../utils/session_storage";
 import NewMeetingModal from "../components/meeting/new_meeting_modal";
 import JoinMeetingModal from "../components/meeting/join_meeting_modal";
+import usePageSEO from "../hooks/usePageSEO";
 
 const Dashboard = () => {
   const { user } = useUser();
@@ -13,12 +14,18 @@ const Dashboard = () => {
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
   const [isJoinMeetingModalOpen, setIsJoinMeetingModalOpen] = useState(false);
 
+  usePageSEO({
+    title: "Dashboard - Instant Video Calls | Viva Meeting",
+    description: "Start instant meetings, create secure room codes, and join video conferences on Viva Meeting.",
+    canonicalPath: "/dashboard",
+  });
+
   const savedMeetings = getSavedMeetings();
   const meetingsUsed = savedMeetings.length;
   const meetingsLimit = 30;
 
   const activeUserName = user?.fullName || user?.firstName || "Divyesh Soni";
-  const activeUserEmail = user?.primaryEmailAddress?.emailAddress || "divyesh@meetup.app";
+  const activeUserEmail = user?.primaryEmailAddress?.emailAddress || "divyesh@viva-app.in";
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);

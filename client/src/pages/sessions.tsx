@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, History, Users, MessageSquare, Calendar, Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
+import usePageSEO from "../hooks/usePageSEO";
 import { getSavedMeetings, deleteSavedMeeting } from "../utils/session_storage";
 import NewMeetingModal from "../components/meeting/new_meeting_modal";
 import SessionDetailModal from "../components/sessions/session_detail_modal";
@@ -9,6 +10,13 @@ import type { Meeting, SessionDetail } from "../types";
 import api from "../config/api";
 
 const Sessions = () => {
+  usePageSEO({
+    title: "Meeting History & Sessions | Viva Meeting",
+    description:
+      "Review your past video conference sessions, participant logs, and chat notes on Viva Meeting.",
+    canonicalPath: "/sessions",
+  });
+
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Meeting[]>(() => getSavedMeetings());
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);

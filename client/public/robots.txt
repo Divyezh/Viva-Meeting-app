@@ -1,0 +1,20 @@
+# Robots.txt for Viva Meeting (https://viva-meeting-app.vercel.app/)
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /privacy
+Allow: /privacy-policy
+Allow: /terms
+Allow: /terms-of-service
+Allow: /login
+Allow: /signup
+Allow: /dashboard
+Allow: /sessions
+Allow: /googled1a697e54b4ff7a7.html
+
+# Prevent crawling of dynamic private meeting rooms to protect user privacy
+Disallow: /meeting/*?*
+
+# Host and Sitemap
+Host: https://viva-meeting-app.vercel.app
+Sitemap: https://viva-meeting-app.vercel.app/sitemap.xml

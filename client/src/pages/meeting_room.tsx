@@ -20,6 +20,7 @@ import { useWebRTC } from "../hooks/useWebRTC";
 import socket from "../config/socket";
 import soundEffects from "../utils/soundEffects";
 import { useUser } from "@clerk/clerk-react";
+import usePageSEO from "../hooks/usePageSEO";
 
 interface JoinRequest {
   requesterSocketId: string;
@@ -36,6 +37,11 @@ const MeetingRoom = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useUser();
+
+  usePageSEO({
+    title: `Live Meeting (${cleanRoomId}) | Viva Meeting`,
+    noIndex: true,
+  });
 
   // Bulletproof host detection: query param (?host=true) takes precedence, fallback to isolated sessionStorage
   const isHost = useMemo(() => {

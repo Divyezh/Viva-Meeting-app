@@ -19,7 +19,7 @@ const Loader = ({ message = "Loading your workspace..." }: LoaderProps) => {
 
       {/* Brand */}
       <h1 className="mb-3 text-2xl font-bold tracking-tight text-surface-900">
-        Meetup<span className="text-[#65a30d]">.</span>
+        Viva Meeting<span className="text-[#65a30d]">.</span>
       </h1>
 
       {/* Loading bar */}
