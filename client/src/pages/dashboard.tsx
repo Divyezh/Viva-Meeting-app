@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import { Plus, ArrowRight, Shield, Keyboard, Crown, Calendar, Mail, BarChart2 } from "lucide-react";
+import { useState } from "react";
+import { Plus, ArrowRight, Shield, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { useUser } from "@clerk/clerk-react";
-import { getSavedMeetings } from "../utils/session_storage";
 import NewMeetingModal from "../components/meeting/new_meeting_modal";
 import JoinMeetingModal from "../components/meeting/join_meeting_modal";
 import usePageSEO from "../hooks/usePageSEO";
@@ -10,63 +9,39 @@ import usePageSEO from "../hooks/usePageSEO";
 const Dashboard = () => {
   const { user } = useUser();
   const [meetingId, setMeetingId] = useState("");
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
   const [isJoinMeetingModalOpen, setIsJoinMeetingModalOpen] = useState(false);
 
   usePageSEO({
-    title: "Dashboard - Instant Video Calls | Viva Meeting",
-    description: "Start instant meetings, create secure room codes, and join video conferences on Viva Meeting.",
+    title: "Viva Meeting - High Quality Instant Video Calls",
+    description:
+      "Start instant meetings, create secure room codes, and join video conferences on Viva Meeting.",
     canonicalPath: "/dashboard",
   });
 
-  const savedMeetings = getSavedMeetings();
-  const meetingsUsed = savedMeetings.length;
-  const meetingsLimit = 30;
-
   const activeUserName = user?.fullName || user?.firstName || "Divyesh Soni";
-  const activeUserEmail = user?.primaryEmailAddress?.emailAddress || "divyesh@viva-app.in";
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleOpenNewMeeting = () => {
     setIsNewMeetingModalOpen(true);
   };
 
-  const handleJoinMeeting = () => {
-    setIsJoinMeetingModalOpen(true);
+  const handleJoinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (meetingId.trim()) {
+      setIsJoinMeetingModalOpen(true);
+    }
   };
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-
   return (
-    <div className="relative w-full py-8 md:py-16 overflow-hidden">
+    <div className="relative min-h-[calc(100vh-5rem)] flex flex-col justify-between px-4 sm:px-6 lg:px-8 py-8 sm:py-14 max-w-5xl mx-auto">
       <Toaster position="top-center" />
 
-      {/* New Meeting Configuration Modal */}
+      {/* Action Modals */}
       <NewMeetingModal
         isOpen={isNewMeetingModalOpen}
         onClose={() => setIsNewMeetingModalOpen(false)}
         defaultUserName={activeUserName}
       />
-
-      {/* Join Meeting Configuration Modal */}
       <JoinMeetingModal
         isOpen={isJoinMeetingModalOpen}
         onClose={() => setIsJoinMeetingModalOpen(false)}
@@ -74,162 +49,139 @@ const Dashboard = () => {
         defaultUserName={activeUserName}
       />
 
-      {/* Decorative luminous orbital glow in background inspired by reference */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 h-137.5 w-137.5 -translate-x-1/2 rounded-full bg-linear-to-b from-emerald-200/40 via-lime-200/25 to-transparent blur-3xl opacity-70" />
+      {/* ─── Hero Block: Upper White Section ─── */}
+      <div className="text-center space-y-6 max-w-3xl mx-auto pt-2 sm:pt-6">
+        {/* Maximum ONE quiet meta/status pill */}
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/90 bg-white/95 px-3.5 py-1 text-xs font-semibold text-emerald-900 shadow-xs backdrop-blur-md">
+          <Shield className="h-3.5 w-3.5 text-[#4d7c0f]" />
+          <span>Secure peer-to-peer video</span>
+        </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
-          {/* ─── Left Column: Hero & Action Controls ─── */}
-          <div className="lg:col-span-7">
-            {/* Small pill badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-white/90 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 shadow-xs backdrop-blur-md">
-              <Shield className="h-3.5 w-3.5 text-[#4d7c0f]" />
-              Secure Peer-to-Peer Encryption
-            </div>
+        {/* Headline: Very slim statement on white, key phrase highlighted */}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl tracking-tight text-slate-900 leading-tight">
+          <span className="font-extralight">Online meetings with high quality video calls.</span>{" "}
+          <span className="block font-semibold text-[#4d7c0f]">Built for everyone.</span>
+        </h1>
 
-            {/* Headline */}
-            <h1 className="mb-4 font-display text-4xl font-extralight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-tight">
-              Online meeting with high quality video calls.
-              <span className="block font-semibold text-[#4d7c0f]">Built for everyone.</span>
-            </h1>
+        {/* Supporting paragraph: Exactly one sentence */}
+        <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+          Connect instantly with teammates and clients in crystal-clear HD video with zero downloads
+          required.
+        </p>
 
-            {/* Supporting paragraph */}
-            <p className="mb-8 max-w-lg text-base leading-relaxed text-slate-600 sm:text-lg">
-              Crystal clear HD video, ultra-low latency audio, and seamless real-time messaging —
-              all in one unified platform.
-            </p>
+        {/* Call to Action: 1 Primary CTA + Quieter Secondary Input */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+          {/* Primary CTA Button */}
+          <button
+            onClick={handleOpenNewMeeting}
+            className="flex items-center justify-center gap-2 rounded-full bg-[#3f6212] hover:bg-[#365314] text-white px-7 py-3 text-sm font-semibold shadow-md shadow-lime-900/20 hover:shadow-lg hover:shadow-lime-900/30 transition-all cursor-pointer active:scale-95"
+          >
+            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <span>Start Instant Meeting</span>
+          </button>
 
-            {/* Action Row */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {/* Primary button: New Meeting */}
-              <button
-                onClick={handleOpenNewMeeting}
-                className="group flex items-center justify-center gap-2 rounded-full bg-[#3f6212] px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#3f6212]/20 transition-all hover:bg-[#365314] hover:shadow-lg hover:shadow-lime-900/30 active:scale-95 shrink-0 cursor-pointer"
-              >
-                <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-                New Meeting
-              </button>
+          {/* Secondary Quiet Join Input */}
+          <form
+            onSubmit={handleJoinSubmit}
+            className="flex items-center gap-2 rounded-full border border-emerald-200/90 bg-white/95 px-4 py-2 text-xs text-slate-800 shadow-xs focus-within:border-[#4d7c0f] focus-within:ring-2 focus-within:ring-lime-100 transition-all"
+          >
+            <input
+              type="text"
+              placeholder="or enter code"
+              value={meetingId}
+              onChange={(e) => setMeetingId(e.target.value)}
+              className="bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 outline-none w-28 sm:w-32"
+            />
+            <button
+              type="submit"
+              disabled={!meetingId.trim()}
+              className="text-[#3f6212] hover:text-[#1e3a1e] font-bold disabled:opacity-40 transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <span>Join</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </form>
+        </div>
+      </div>
 
-              {/* Input field + Join Button Group */}
-              <div className="flex flex-1 items-center gap-2">
-                <div className="flex flex-1 items-center gap-2.5 rounded-full border border-emerald-200/80 bg-white/95 px-4 py-2.5 shadow-xs focus-within:border-[#65a30d] focus-within:ring-2 focus-within:ring-lime-100">
-                  <Keyboard className="h-4 w-4 text-emerald-700/60 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="Enter meeting code (e.g. abc-def-ghi)"
-                    value={meetingId}
-                    onChange={(e) => setMeetingId(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleJoinMeeting()}
-                    className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none sm:text-sm"
-                  />
+      {/* ─── Hero Visual: Realistic Video Tile Grid on Downward Olive-Pista Shader ─── */}
+      <div className="mt-12 sm:mt-16 w-full max-w-3xl mx-auto">
+        <div className="rounded-3xl border border-white/80 bg-white/85 p-3.5 sm:p-5 shadow-2xl shadow-emerald-950/20 backdrop-blur-xl">
+          {/* 4 Participant Mock Video Tiles (2x2 Grid) */}
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
+            {/* Tile 1: Active User (Host) */}
+            <div className="relative aspect-video rounded-2xl bg-linear-to-br from-[#1b3d22] via-[#122818] to-[#0a180f] border border-lime-400/40 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden shadow-inner">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-white truncate">{activeUserName} (You)</span>
+                <span className="h-2 w-2 rounded-full bg-[#a3e635] animate-pulse" />
+              </div>
+              <div className="my-auto flex items-center justify-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-[#3f6212] border border-lime-300/40 flex items-center justify-center text-sm font-bold text-white shadow-md">
+                  {activeUserName.charAt(0)}
                 </div>
-
-                <button
-                  onClick={handleJoinMeeting}
-                  className="flex items-center gap-1.5 rounded-full bg-[#142417] px-6 py-3 text-xs sm:text-sm font-bold text-white shadow-md shadow-emerald-950/20 transition-all hover:bg-[#1e3820] hover:shadow-lg active:scale-95 shrink-0 cursor-pointer"
-                >
-                  Join
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+              </div>
+              <div className="flex items-center justify-end gap-1.5 text-[#a3e635]">
+                <Mic className="h-3.5 w-3.5" />
+                <Video className="h-3.5 w-3.5" />
               </div>
             </div>
-          </div>
 
-          {/* ─── Right Column: Floating Status & Clock Card ─── */}
-          <div className="lg:col-span-5 flex justify-center lg:justify-end relative">
-            {/* Concentric orbital decorative rings behind card like reference */}
-            <div className="pointer-events-none absolute -inset-6 -z-10 flex items-center justify-center">
-              <div className="h-80 w-80 rounded-full border border-emerald-300/30 opacity-60 animate-pulse" />
-              <div className="absolute h-95 w-95 rounded-full border border-lime-300/20 opacity-50" />
+            {/* Tile 2: Participant 1 */}
+            <div className="relative aspect-video rounded-2xl bg-slate-900/90 border border-white/10 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-white">Sarah Jenkins</span>
+              </div>
+              <div className="my-auto flex items-center justify-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-emerald-800 flex items-center justify-center text-sm font-bold text-emerald-200">
+                  SJ
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-1.5 text-slate-400">
+                <MicOff className="h-3.5 w-3.5 text-red-400" />
+                <Video className="h-3.5 w-3.5 text-emerald-400" />
+              </div>
             </div>
 
-            <div className="glass-panel w-full max-w-sm rounded-3xl p-6 sm:p-7">
-              {/* Greeting */}
-              <div className="mb-4">
-                <span className="text-xs font-medium text-slate-500">Hi,</span>
-                <h2 className="text-xl font-bold text-slate-900">{activeUserName}</h2>
+            {/* Tile 3: Participant 2 */}
+            <div className="relative aspect-video rounded-2xl bg-slate-900/90 border border-white/10 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-white">Alex Rivera</span>
               </div>
-
-              {/* Live Time Display */}
-              <div className="mb-5 rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100/70">
-                <div className="font-mono text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-                  {formatTime(currentTime)}
-                </div>
-                <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-[#4d7c0f]">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {formatDate(currentTime)}
+              <div className="my-auto flex items-center justify-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-teal-800 flex items-center justify-center text-sm font-bold text-teal-200">
+                  AR
                 </div>
               </div>
-
-              {/* Logged in Info */}
-              <div className="mb-5 flex items-center justify-between border-b border-emerald-100/60 pb-4">
-                <div className="flex items-center gap-2 text-xs text-slate-500 truncate mr-2">
-                  <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{activeUserEmail}</span>
-                </div>
-                <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0 bg-[#3f6212] text-white">
-                  <Crown className="h-3 w-3" />
-                  Free Plan
-                </span>
+              <div className="flex items-center justify-end gap-1.5 text-slate-400">
+                <Mic className="h-3.5 w-3.5 text-emerald-400" />
+                <Video className="h-3.5 w-3.5 text-emerald-400" />
               </div>
+            </div>
 
-              {/* Stat Sub-Card */}
-              <div className="rounded-2xl bg-white/70 border border-emerald-100/60 p-4 shadow-2xs">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <BarChart2 className="h-3.5 w-3.5 text-[#4d7c0f]" />
-                    Monthly Meetings
-                  </span>
-                  <span className="text-xs font-bold text-slate-900">
-                    {meetingsUsed} / {meetingsLimit}
-                  </span>
+            {/* Tile 4: Participant 3 */}
+            <div className="relative aspect-video rounded-2xl bg-slate-900/90 border border-white/10 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-semibold text-white">Elena Rostova</span>
+              </div>
+              <div className="my-auto flex items-center justify-center">
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-300">
+                  ER
                 </div>
-
-                <div className="text-sm font-bold text-slate-900 mt-2">
-                  {meetingsUsed} Created{" "}
-                  <span className="text-xs font-normal text-slate-500">
-                    ({meetingsLimit - meetingsUsed} remaining)
-                  </span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-emerald-100/70">
-                  <div
-                    className="h-full rounded-full bg-linear-to-r from-[#4d7c0f] to-[#84cc16] transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, Math.max(8, (meetingsUsed / meetingsLimit) * 100))}%`,
-                    }}
-                  />
-                </div>
+              </div>
+              <div className="flex items-center justify-end gap-1.5 text-slate-400">
+                <MicOff className="h-3.5 w-3.5 text-red-400" />
+                <VideoOff className="h-3.5 w-3.5 text-red-400" />
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* ─── Bottom Art / Capability Ribbon on Dark Olive Shader ─── */}
-        <div className="mt-14 sm:mt-20 pt-8 border-t border-emerald-500/20 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-200/80 mb-5">
-            Enterprise-Grade Real-Time Video Infrastructure
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3.5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-950/40 px-4 py-2 text-xs font-medium text-emerald-200 backdrop-blur-md shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              Ultra-Low Latency WebRTC
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-950/40 px-4 py-2 text-xs font-medium text-emerald-200 backdrop-blur-md shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-lime-400" />
-              End-to-End Encrypted Media
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-950/40 px-4 py-2 text-xs font-medium text-emerald-200 backdrop-blur-md shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-300" />
-              Lossless Screen Sharing
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-950/40 px-4 py-2 text-xs font-medium text-emerald-200 backdrop-blur-md shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-lime-300" />
-              Dynamic Adaptive Bitrate
-            </div>
-          </div>
-        </div>
+      {/* ─── Infrastructure Note ─── */}
+      <div className="mt-8 sm:mt-10 text-center pb-2">
+        <p className="text-[11px] text-emerald-950/70 font-medium">
+          Trusted infrastructure: WebRTC · End-to-end encrypted · Adaptive bitrate
+        </p>
       </div>
     </div>
   );

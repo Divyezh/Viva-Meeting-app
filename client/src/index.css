@@ -9,16 +9,15 @@
 
   body {
     font-family:
+      "Inter",
       system-ui,
       -apple-system,
       BlinkMacSystemFont,
       "Segoe UI",
       Roboto,
-      "Helvetica Neue",
-      Arial,
       sans-serif;
-    background-color: #f6faf5;
-    color: #142417;
+    background-color: #ffffff;
+    color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
@@ -27,54 +26,50 @@
 }
 
 .font-display {
-  font-family: "Outfit", "Urbanist", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
-/* ─── Premium Deep Olive & Luminous Pista Shader Background ─── */
-.bg-app-gradient {
-  background: 
-    /* Top luminous soft white-mint aura */
+/* ─── White Upper & Olive Pista Green Downward Shader (Matches Reference Layout) ─── */
+.bg-viva-shader {
+  background-color: #ffffff;
+  background-image:
+    /* Central glowing pista-lime radial shader bloom */
     radial-gradient(
-      1300px circle at 50% -5%,
-      rgba(255, 255, 255, 0.98) 0%,
-      rgba(240, 253, 244, 0.7) 40%,
-      transparent 75%
+      1100px circle at 50% 70%,
+      rgba(190, 242, 100, 0.45) 0%,
+      rgba(132, 204, 22, 0.38) 28%,
+      rgba(77, 124, 15, 0.28) 55%,
+      transparent 80%
     ),
-    /* Center glowing pista/lime-olive radial bloom */
+    /* Soft left ambient olive-pista shader */
     radial-gradient(
-        950px circle at 50% 45%,
-        rgba(167, 243, 208, 0.45) 0%,
-        rgba(190, 242, 100, 0.28) 25%,
-        rgba(77, 124, 15, 0.22) 50%,
-        transparent 80%
+        850px circle at 12% 88%,
+        rgba(163, 230, 53, 0.35) 0%,
+        rgba(77, 124, 15, 0.2) 45%,
+        transparent 70%
       ),
-    /* Lower luminous olive spotlight/shader aura */
+    /* Soft right ambient olive-pista shader */
     radial-gradient(
-        900px circle at 50% 85%,
-        rgba(134, 239, 172, 0.22) 0%,
-        rgba(101, 163, 13, 0.25) 30%,
-        rgba(20, 48, 22, 0.6) 65%,
-        transparent 95%
+        850px circle at 88% 88%,
+        rgba(101, 163, 13, 0.32) 0%,
+        rgba(54, 83, 20, 0.2) 45%,
+        transparent 70%
       ),
-    /* Left subtle ambient glow */
-    radial-gradient(800px circle at 15% 100%, rgba(163, 230, 53, 0.15) 0%, transparent 60%),
-    /* Right subtle ambient glow */
-    radial-gradient(800px circle at 85% 100%, rgba(74, 222, 128, 0.15) 0%, transparent 60%),
-    /* Smooth cinematic linear shader transition into dark rich olive green */
+    /* Smooth vertical transition: pure white at top -> soft pista -> rich olive green downwards */
     linear-gradient(
         180deg,
         #ffffff 0%,
-        #f8fcf8 14%,
-        #eaf6e9 28%,
-        #c4f4ce 42%,
-        #5c911e 58%,
-        #335517 72%,
-        #1c3414 84%,
-        #0f200c 93%,
-        #081307 100%
+        #ffffff 22%,
+        #f8fcf8 34%,
+        #e8f7ea 48%,
+        #bdf2c3 64%,
+        #7ed978 76%,
+        #51961c 88%,
+        #386412 95%,
+        #24440a 100%
       );
   background-attachment: fixed;
-  background-color: #081307;
+  background-size: 100% 100%;
 }
 
 .page-gradient {
@@ -137,6 +132,87 @@
   box-shadow:
     0 0 35px rgba(163, 230, 53, 0.15),
     inset 0 0 25px rgba(134, 239, 172, 0.08);
+}
+
+/* ─── Dark Forest Dot-Grid & Mesh Texture ─── */
+.bg-deep-forest-mesh {
+  background-color: #071c14;
+  background-image:
+    radial-gradient(1000px circle at 50% -10%, rgba(163, 230, 53, 0.14) 0%, transparent 60%),
+    radial-gradient(800px circle at 85% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 55%),
+    radial-gradient(700px circle at 15% 80%, rgba(132, 204, 22, 0.08) 0%, transparent 50%),
+    radial-gradient(rgba(163, 230, 53, 0.14) 1.2px, transparent 1.2px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    28px 28px;
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(163, 230, 53, 0.15) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+
+/* ─── Dark Forest Glass Panels ─── */
+.glass-panel-dark {
+  background: rgba(7, 28, 20, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(163, 230, 53, 0.18);
+  box-shadow:
+    0 20px 50px -10px rgba(0, 0, 0, 0.6),
+    0 0 30px -5px rgba(163, 230, 53, 0.06);
+}
+
+.glass-card-forest {
+  background: rgba(11, 41, 30, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(163, 230, 53, 0.15);
+}
+
+/* ─── Equalizer Soundwave Animation ─── */
+@keyframes soundwave-1 {
+  0%,
+  100% {
+    height: 6px;
+  }
+  50% {
+    height: 18px;
+  }
+}
+
+@keyframes soundwave-2 {
+  0%,
+  100% {
+    height: 16px;
+  }
+  50% {
+    height: 8px;
+  }
+}
+
+@keyframes soundwave-3 {
+  0%,
+  100% {
+    height: 10px;
+  }
+  50% {
+    height: 22px;
+  }
+}
+
+.animate-wave-1 {
+  animation: soundwave-1 0.8s ease-in-out infinite;
+}
+
+.animate-wave-2 {
+  animation: soundwave-2 0.7s ease-in-out infinite 0.15s;
+}
+
+.animate-wave-3 {
+  animation: soundwave-3 0.9s ease-in-out infinite 0.3s;
 }
 
 /* ─── Smooth Transitions ─── */

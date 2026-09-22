@@ -4,39 +4,39 @@ import BrandLogo from "./brand_logo";
 
 const Footer = () => {
   return (
-    <footer className="py-8 px-4 relative z-10 border-t border-emerald-900/20 bg-black/10 backdrop-blur-xs">
-      <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-emerald-200/70">
-        <div className="flex items-center gap-2.5">
-          <BrandLogo className="h-4.5 w-4.5" color="#84cc16" />
-          <span className="font-semibold text-white tracking-tight">VIVA<span className="text-[#84cc16]">.</span></span>
-          <span>© {new Date().getFullYear()} All rights reserved.</span>
+    <footer className="w-full py-5 px-4 sm:px-6 lg:px-8 border-t border-emerald-900/15 bg-black/5 backdrop-blur-xs relative z-10">
+      <div className="mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-emerald-950/80">
+        {/* Left: Brand & Copyright */}
+        <div className="flex items-center gap-2">
+          <BrandLogo className="h-4 w-4" color="#2e5210" />
+          <span className="font-bold text-slate-900">
+            VIVA<span className="text-[#3f6212]">.</span>
+          </span>
+          <span className="text-emerald-950/70">·</span>
+          <span className="font-medium text-emerald-950/90">
+            © 2026 Viva Meeting. All rights reserved.
+          </span>
         </div>
 
-        {/* DPDP Act Compliance & Legal Links */}
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs">
-          <Link
-            to="/privacy"
-            className="hover:text-white transition-colors flex items-center gap-1.5"
-          >
-            <Shield className="h-3 w-3 text-emerald-400" />
-            <span>Privacy Policy</span>
-          </Link>
-
-          <span className="text-emerald-900/60 hidden sm:inline">·</span>
-
+        {/* Right: Legal & Policy Links */}
+        <div className="flex items-center gap-4 sm:gap-6 font-medium">
           <Link
             to="/terms"
-            className="hover:text-white transition-colors flex items-center gap-1.5"
+            className="flex items-center gap-1.5 text-emerald-950/80 hover:text-slate-900 hover:underline transition-colors"
           >
-            <Scale className="h-3 w-3 text-emerald-400" />
+            <Scale className="h-3.5 w-3.5 text-emerald-800" />
             <span>Terms of Service</span>
           </Link>
 
-          <span className="text-emerald-900/60 hidden sm:inline">·</span>
+          <span className="text-emerald-900/30">·</span>
 
-          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400/90 font-medium rounded-full bg-emerald-950/60 border border-emerald-800/40 px-2.5 py-0.5">
-            DPDP Act, 2023 (India)
-          </span>
+          <Link
+            to="/privacy"
+            className="flex items-center gap-1.5 text-emerald-950/80 hover:text-slate-900 hover:underline transition-colors"
+          >
+            <Shield className="h-3.5 w-3.5 text-emerald-800" />
+            <span>Privacy Policy</span>
+          </Link>
         </div>
       </div>
     </footer>
