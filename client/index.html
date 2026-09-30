@@ -5,8 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Viva Meeting - HD Video Calling &amp; Instant Online Conferencing</title>
-    <meta name="description" content="Viva Meeting (https://viva-meeting-app.vercel.app/) is a free, high-definition video calling and conferencing platform. Start instant encrypted meetings, share screens, and collaborate with ease." />
-    <meta name="keywords" content="Viva meeting, Viva meeting app, Viva video call, Viva video conferencing, online meetings, free video call app, Indian meeting app, WebRTC video calling, secure meeting app" />
+    <meta name="description" content="Viva Meeting (https://viva-meeting-app.vercel.app/) is a free, high-definition video calling and conferencing platform. Start instant encrypted meetings, share screens, translate Hindi to English live, and collaborate with ease." />
+    <meta name="keywords" content="Viva meeting, Viva meeting app, Viva video call, Viva video conferencing, online meetings, free video call app, Indian meeting app, WebRTC video calling, secure meeting app, screen share, live captions hindi english, viva meeting pricing, viva meeting payment" />
     <meta name="author" content="Viva Meeting" />
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <link rel="canonical" href="https://viva-meeting-app.vercel.app/" />
@@ -19,7 +19,7 @@
     <meta property="og:url" content="https://viva-meeting-app.vercel.app/" />
     <meta property="og:site_name" content="Viva Meeting" />
     <meta property="og:title" content="Viva Meeting - HD Video Calling &amp; Conferencing Platform" />
-    <meta property="og:description" content="Host and join instant secure video meetings with crystal-clear audio, screen sharing, and waiting room protection on Viva Meeting." />
+    <meta property="og:description" content="Host and join instant secure video meetings with crystal-clear audio, screen sharing, waiting room protection, and live captions on Viva Meeting." />
     <meta property="og:image" content="https://viva-meeting-app.vercel.app/favicon.svg" />
     <meta property="og:locale" content="en_US" />
 
@@ -27,7 +27,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://viva-meeting-app.vercel.app/" />
     <meta name="twitter:title" content="Viva Meeting - HD Video Calling &amp; Conferencing Platform" />
-    <meta name="twitter:description" content="Host and join instant secure video meetings with crystal-clear audio, screen sharing, and waiting room protection on Viva Meeting." />
+    <meta name="twitter:description" content="Host and join instant secure video meetings with crystal-clear audio, screen sharing, waiting room protection, and live captions on Viva Meeting." />
     <meta name="twitter:image" content="https://viva-meeting-app.vercel.app/favicon.svg" />
 
     <!-- Mobile App & Theme Meta -->
@@ -50,16 +50,26 @@
       "name": "Viva Meeting",
       "operatingSystem": "Web, Windows, macOS, Android, iOS, Linux",
       "applicationCategory": "CommunicationApplication",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "INR"
-      },
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Free Plan",
+          "price": "0",
+          "priceCurrency": "INR"
+        },
+        {
+          "@type": "Offer",
+          "name": "Pro Plan",
+          "price": "699",
+          "priceCurrency": "INR"
+        }
+      ],
       "description": "Viva Meeting is a secure real-time video conferencing application featuring WebRTC end-to-end media streams, screen sharing, waiting room admission control, and in-call chat.",
       "url": "https://viva-meeting-app.vercel.app/",
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.9",
+        "ratingCount": "128",
         "reviewCount": "128"
       }
     }
@@ -113,7 +123,7 @@
           "name": "Is Viva Meeting free to use?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes, Viva Meeting offers a generous free tier with unlimited 1-on-1 and group video calls, screen sharing, and real-time chat."
+            "text": "Yes, Viva Meeting offers a generous free tier with up to 8 participants, screen sharing, and real-time chat."
           }
         },
         {
@@ -121,7 +131,7 @@
           "name": "How do I join a Viva Meeting?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "You can join a Viva meeting simply by clicking an invite link (https://viva-meeting-app.vercel.app/meeting/<roomId>) or by entering the meeting code on the dashboard."
+            "text": "You can join a Viva meeting simply by clicking an invite link (https://viva-meeting-app.vercel.app/join or /meeting/<roomId>) or by entering the meeting code."
           }
         },
         {
@@ -151,12 +161,72 @@
         <p>
           <a href="/login" style="color: #4d7c0f; font-weight: 600; text-decoration: underline;">Sign In</a> | 
           <a href="/pricing" style="color: #4d7c0f; font-weight: 600; text-decoration: underline;">Pricing</a> | 
+          <a href="/payment" style="color: #4d7c0f; font-weight: 600; text-decoration: underline;">Payment</a> | 
           <a href="/privacy" style="color: #4d7c0f; font-weight: 600; text-decoration: underline;">Privacy Policy</a> | 
           <a href="/terms" style="color: #4d7c0f; font-weight: 600; text-decoration: underline;">Terms of Service</a>
         </p>
       </div>
     </noscript>
-    <div id="root"></div>
+
+    <!-- Crawlable Pre-rendered Content (Hydrated by React on load) -->
+    <div id="root">
+      <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; min-height: 100vh; background: #081307; color: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2.5rem 1.5rem; text-align: center;">
+        <header style="max-width: 760px; margin: 0 auto;">
+          <div style="display: inline-block; padding: 0.35rem 1rem; border-radius: 9999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(163,230,53,0.3); font-size: 0.8rem; font-weight: 600; color: #a3e635; margin-bottom: 1.5rem;">
+            Secure Peer-to-Peer HD Video Calling
+          </div>
+          <h1 style="font-size: 2.75rem; font-weight: 800; color: #ffffff; line-height: 1.15; margin-bottom: 1.25rem; letter-spacing: -0.02em;">
+            Online meetings with high quality video calls. <span style="color: #a3e635;">Built for everyone.</span>
+          </h1>
+          <p style="font-size: 1.125rem; color: #cbd5e1; max-width: 620px; margin: 0 auto 2.25rem; line-height: 1.6;">
+            Connect instantly in crystal-clear HD video with zero downloads required. Enjoy WebRTC end-to-end media streams, screen sharing, Hindi-to-English translation captions, and encrypted waiting rooms.
+          </p>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2.5rem;">
+            <a href="/dashboard" style="background: #3f6212; color: #ffffff; padding: 0.85rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 0.95rem; box-shadow: 0 4px 14px rgba(63,98,18,0.4);">
+              Start Instant Meeting
+            </a>
+            <a href="/join" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #ffffff; padding: 0.85rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.95rem;">
+              Join with Code
+            </a>
+            <a href="/pricing" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(163,230,53,0.3); color: #a3e635; padding: 0.85rem 2rem; border-radius: 9999px; text-decoration: none; font-weight: 600; font-size: 0.95rem;">
+              View Pricing
+            </a>
+          </div>
+        </header>
+
+        <section style="margin-top: 1rem; max-width: 700px; width: 100%;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; text-align: left;">
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; padding: 1.25rem;">
+              <h2 style="font-size: 1rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem;">Instant Meetings</h2>
+              <p style="font-size: 0.85rem; color: #94a3b8; margin: 0; line-height: 1.5;">Create custom meeting codes and connect immediately without waiting.</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; padding: 1.25rem;">
+              <h2 style="font-size: 1rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem;">Screen Share &amp; Chat</h2>
+              <p style="font-size: 0.85rem; color: #94a3b8; margin: 0; line-height: 1.5;">Share your entire screen or tabs with host permission controls and live chat.</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 1rem; padding: 1.25rem;">
+              <h2 style="font-size: 1rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem;">Live Hindi Captions</h2>
+              <p style="font-size: 0.85rem; color: #94a3b8; margin: 0; line-height: 1.5;">AI speech-to-text with Hindi-to-English live subtitles for accessible meetings.</p>
+            </div>
+          </div>
+        </section>
+
+        <footer style="margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; width: 100%; max-width: 760px;">
+          <nav style="display: flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; color: #94a3b8; flex-wrap: wrap;">
+            <a href="/pricing" style="color: #a3e635; text-decoration: none; font-weight: 500;">Pricing</a>
+            <a href="/payment" style="color: #a3e635; text-decoration: none; font-weight: 500;">Upgrade to Pro</a>
+            <a href="/sessions" style="color: #a3e635; text-decoration: none; font-weight: 500;">Meeting History</a>
+            <a href="/join" style="color: #a3e635; text-decoration: none; font-weight: 500;">Guest Join</a>
+            <a href="/login" style="color: #a3e635; text-decoration: none; font-weight: 500;">Sign In</a>
+            <a href="/terms" style="color: #a3e635; text-decoration: none; font-weight: 500;">Terms</a>
+            <a href="/privacy" style="color: #a3e635; text-decoration: none; font-weight: 500;">Privacy</a>
+          </nav>
+          <p style="margin-top: 1rem; font-size: 0.75rem; color: #64748b;">
+            &copy; 2026 Viva Meeting. Compliant with India DPDP Act 2023. End-to-end encrypted WebRTC.
+          </p>
+        </footer>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

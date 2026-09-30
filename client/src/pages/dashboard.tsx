@@ -23,10 +23,10 @@ const Dashboard = () => {
   }, []);
 
   usePageSEO({
-    title: "Viva Meeting - High Quality Instant Video Calls",
+    title: "Viva Meeting - High Quality Instant Video Calls & Conferencing",
     description:
-      "Start instant meetings, create secure room codes, and join video conferences on Viva Meeting.",
-    canonicalPath: "/dashboard",
+      "Start instant encrypted video meetings, create secure room codes, share screens, and join HD conferences on Viva Meeting with zero downloads.",
+    canonicalPath: "/",
   });
 
   const activeUserName = user?.fullName || user?.firstName || "Divyesh Soni";

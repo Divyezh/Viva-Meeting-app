@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedLayout from "./components/protected_layout";
-import ProtectedRoute from "./components/protected_route";
 import Dashboard from "./pages/dashboard";
 import Pricing from "./pages/pricing";
 import Sessions from "./pages/sessions";
@@ -30,24 +29,18 @@ function App() {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
-        {/* Protected App Routes (Requires Login or Sign Up) */}
-        <Route
-          element={
-            <ProtectedRoute>
-              <ProtectedLayout />
-            </ProtectedRoute>
-          }
-        >
+        {/* Public App Layout with Navigation and Footer - Fully Indexable & Crawlable */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/sessions" element={<Sessions />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/pay" element={<PaymentPage />} />
+          <Route path="/sessions" element={<Sessions />} />
         </Route>
 
-        {/* Default redirects */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Fallback redirects to root */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

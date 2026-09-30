@@ -18,24 +18,43 @@ const Footer = () => {
           </span>
         </div>
 
-        {/* Right: Legal & Policy Links */}
-        <div className="flex items-center gap-4 sm:gap-6 font-medium">
+        {/* Right: Navigation & Legal Links */}
+        <div className="flex items-center gap-3 sm:gap-5 font-medium flex-wrap justify-center">
+          <Link
+            to="/pricing"
+            className="text-white/85 hover:text-white hover:underline transition-colors"
+          >
+            Pricing
+          </Link>
+          <span className="text-white/30">·</span>
+          <Link
+            to="/payment"
+            className="text-white/85 hover:text-white hover:underline transition-colors"
+          >
+            Payment
+          </Link>
+          <span className="text-white/30">·</span>
+          <Link
+            to="/sessions"
+            className="text-white/85 hover:text-white hover:underline transition-colors"
+          >
+            Sessions
+          </Link>
+          <span className="text-white/30">·</span>
           <Link
             to="/terms"
             className="flex items-center gap-1.5 text-white/85 hover:text-white hover:underline transition-colors"
           >
             <Scale className="h-3.5 w-3.5 text-lime-400" />
-            <span>Terms of Service</span>
+            <span>Terms</span>
           </Link>
-
           <span className="text-white/30">·</span>
-
           <Link
             to="/privacy"
             className="flex items-center gap-1.5 text-white/85 hover:text-white hover:underline transition-colors"
           >
             <Shield className="h-3.5 w-3.5 text-lime-400" />
-            <span>Privacy Policy</span>
+            <span>Privacy</span>
           </Link>
         </div>
       </div>
