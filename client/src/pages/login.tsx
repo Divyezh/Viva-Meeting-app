@@ -1,6 +1,6 @@
 import { SignIn, useAuth } from "@clerk/clerk-react";
 import { Navigate, Link } from "react-router-dom";
-import { Shield } from "lucide-react";
+import { Shield, Video, ArrowRight } from "lucide-react";
 import BrandLogo from "../components/brand_logo";
 import usePageSEO from "../hooks/usePageSEO";
 
@@ -32,7 +32,7 @@ const Login = () => {
 
       <div className="relative w-full max-w-md flex flex-col items-center">
         {/* Brand Header */}
-        <div className="mb-6 flex flex-col items-center text-center">
+        <div className="mb-5 flex flex-col items-center text-center">
           <div className="mb-3 flex h-13 w-13 items-center justify-center rounded-2xl bg-white/90 border border-emerald-200/80 shadow-lg shadow-lime-900/10 backdrop-blur-md">
             <BrandLogo className="h-8 w-8" color="#4d7c0f" />
           </div>
@@ -40,6 +40,26 @@ const Login = () => {
             Viva Meeting<span className="text-[#65a30d]">.</span>
           </h1>
           <p className="mt-1 text-xs text-slate-500">Ultra-low latency HD video conferencing</p>
+        </div>
+
+        {/* Quick Guest Join Banner - No Sign In Required */}
+        <div className="w-full mb-4.5 rounded-2xl bg-white/90 border border-emerald-500/30 p-3.5 shadow-sm backdrop-blur-md flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100/80 text-[#3f6212]">
+              <Video className="h-4.5 w-4.5" />
+            </div>
+            <div className="truncate">
+              <div className="text-xs font-bold text-slate-900 truncate">Have a meeting ID or link?</div>
+              <div className="text-[11px] text-emerald-700/80 font-medium truncate">Join as guest with zero sign-in</div>
+            </div>
+          </div>
+          <Link
+            to="/join"
+            className="shrink-0 flex items-center gap-1 rounded-full bg-[#3f6212] hover:bg-[#365314] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+          >
+            <span>Join Now</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
         {/* Official Clerk Sign In Component */}

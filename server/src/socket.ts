@@ -25,6 +25,27 @@ interface PendingJoinRequest {
 // Pending join requests waiting for host admission or for host to arrive: roomId -> Map(socketId -> PendingJoinRequest)
 const pendingJoinRequests = new Map<string, Map<string, PendingJoinRequest>>();
 
+// Screen share permission state per room: roomId -> state
+interface RoomScreenShareState {
+  allAllowed: boolean;
+  allowedUserIds: Set<string>;
+  allowedSocketIds: Set<string>;
+  currentPresenterSocketId?: string;
+  currentPresenterUserId?: string;
+}
+const roomScreenShareState = new Map<string, RoomScreenShareState>();
+
+const getOrCreateScreenShareState = (roomId: string): RoomScreenShareState => {
+  if (!roomScreenShareState.has(roomId)) {
+    roomScreenShareState.set(roomId, {
+      allAllowed: false,
+      allowedUserIds: new Set<string>(),
+      allowedSocketIds: new Set<string>(),
+    });
+  }
+  return roomScreenShareState.get(roomId)!;
+};
+
 export const setupSocket = (server: HttpServer): Server => {
   const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
 
@@ -175,6 +196,19 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
+        // Check 8-participant capacity limit for Free plan
+        const currentRoomMap = roomParticipants.get(roomId);
+        const currentActiveCount = currentRoomMap
+          ? Array.from(currentRoomMap.keys()).filter((sId) => io.sockets.sockets.has(sId)).length
+          : 0;
+        if (!isHost && currentActiveCount >= 8) {
+          socket.emit("join-response", {
+            approved: false,
+            reason: "This meeting room is full (maximum 8 participants on Free plan).",
+          });
+          return;
+        }
+
         // Host is present: forward admission request to the host only (no duplicate room broadcast)
         console.log(`[Join Request] "${userName}" (${socket.id}) requested to join "${roomId}"`);
         io.to(host.socketId).emit("join-request-received", reqItem);
@@ -198,6 +232,18 @@ export const setupSocket = (server: HttpServer): Server => {
             approved ? "APPROVED" : "DENIED"
           }`
         );
+
+        // Check if requester is still connected before approving
+        const requesterSocket = io.sockets.sockets.get(requesterSocketId);
+        if (!requesterSocket) {
+          console.log(`[Join Decision] Requester ${requesterSocketId} already disconnected.`);
+          pendingJoinRequests.get(roomId)?.delete(requesterSocketId);
+          socket.emit("join-request-cancelled", {
+            requesterSocketId,
+            userId: "",
+          });
+          return;
+        }
 
         // Remove from pending join requests
         pendingJoinRequests.get(roomId)?.delete(requesterSocketId);
@@ -297,32 +343,73 @@ export const setupSocket = (server: HttpServer): Server => {
           });
         }
 
-        // Clean up any stale sockets in this room belonging to the same userId
+        // Clean up any dead sockets or stale entries in this room
         roomMap.forEach((existingUser, existingSocketId) => {
-          if (existingSocketId !== socket.id && existingUser.userId === effectiveUserId) {
+          const isAlive = io.sockets.sockets.has(existingSocketId);
+          if (!isAlive || (existingSocketId !== socket.id && existingUser.userId === effectiveUserId)) {
             console.log(
-              `[Deduplicate] Purging stale socket ${existingSocketId} for user ${effectiveUserId}`
+              `[Deduplicate] Purging inactive/stale socket ${existingSocketId} for user ${existingUser.userId}`
             );
             roomMap.delete(existingSocketId);
             socketToRoom.delete(existingSocketId);
-            socket.to(roomId).emit("user-disconnected", {
-              socketId: existingSocketId,
-              userId: effectiveUserId,
-            });
+            if (isAlive) {
+              socket.to(roomId).emit("user-disconnected", {
+                socketId: existingSocketId,
+                userId: existingUser.userId,
+              });
+            }
           }
         });
 
+        // 8-participant capacity limit check for Free tier
+        const activeCount = Array.from(roomMap.keys()).filter((sId) => io.sockets.sockets.has(sId)).length;
+        if (!isHost && !roomMap.has(socket.id) && activeCount >= 8) {
+          socket.emit("join-response", {
+            approved: false,
+            reason: "This room has reached maximum capacity of 8 participants for the Free plan.",
+          });
+          return;
+        }
+
         // Collect existing participants in this room (deduplicated by userId)
+        const shareState = getOrCreateScreenShareState(roomId);
+        if (isHost) {
+          shareState.allowedUserIds.add(effectiveUserId);
+          shareState.allowedSocketIds.add(socket.id);
+        }
+        const userCanShare =
+          isHost ||
+          shareState.allAllowed ||
+          shareState.allowedUserIds.has(effectiveUserId) ||
+          shareState.allowedSocketIds.has(socket.id);
+
         const existingUsers: SocketParticipant[] = [];
         const seenUserIds = new Set<string>();
+        const hostSocketId = roomHosts.get(roomId)?.socketId;
         roomMap.forEach((user, existingSocketId) => {
+          const isAlive = io.sockets.sockets.has(existingSocketId);
+          if (!isAlive) {
+            roomMap.delete(existingSocketId);
+            socketToRoom.delete(existingSocketId);
+            return;
+          }
+
           if (
             existingSocketId !== socket.id &&
             user.userId !== effectiveUserId &&
             !seenUserIds.has(user.userId)
           ) {
             seenUserIds.add(user.userId);
-            existingUsers.push(user);
+            const peerCanShare =
+              shareState.allAllowed ||
+              shareState.allowedUserIds.has(user.userId) ||
+              shareState.allowedSocketIds.has(existingSocketId) ||
+              hostSocketId === existingSocketId;
+            existingUsers.push({
+              ...user,
+              canShareScreen: peerCanShare,
+              isScreenSharing: !!user.isScreenSharing,
+            });
           }
         });
 
@@ -333,6 +420,8 @@ export const setupSocket = (server: HttpServer): Server => {
           avatarUrl,
           isMuted,
           isCameraOff,
+          isScreenSharing: false,
+          canShareScreen: userCanShare,
           joinedAt: new Date().toISOString(),
         };
 
@@ -341,7 +430,7 @@ export const setupSocket = (server: HttpServer): Server => {
           roomId,
           userId: newUser.userId,
           userName: newUser.userName,
-          isHost: isHost || roomHosts.get(roomId)?.socketId === socket.id,
+          isHost: isHost || hostSocketId === socket.id,
         });
 
         console.log(
@@ -351,7 +440,15 @@ export const setupSocket = (server: HttpServer): Server => {
         // 1. Send all already connected participants in the room to the newly joined peer
         socket.emit("existing-users", existingUsers);
 
-        // 2. Broadcast to everyone else in the room that this new peer has joined
+        // 2. Send screen share status to newly joined peer
+        socket.emit("screen-share-status", {
+          canShare: userCanShare,
+          allAllowed: shareState.allAllowed,
+          allowedUserIds: Array.from(shareState.allowedUserIds),
+          currentPresenterSocketId: shareState.currentPresenterSocketId,
+        });
+
+        // 3. Broadcast to everyone else in the room that this new peer has joined
         socket.to(roomId).emit("user-joined", newUser);
       }
     );
@@ -400,6 +497,7 @@ export const setupSocket = (server: HttpServer): Server => {
 
       roomParticipants.delete(roomId);
       roomHosts.delete(roomId);
+      roomScreenShareState.delete(roomId);
     });
 
     // ─── 2. WEBRTC SIGNALING: OFFER ───────────────────────────
@@ -450,23 +548,36 @@ export const setupSocket = (server: HttpServer): Server => {
       }
     );
 
-    // ─── 5. MEDIA STATE TOGGLE (MUTE / CAMERA) ────────────────
+    // ─── 5. MEDIA STATE TOGGLE (MUTE / CAMERA / SCREEN SHARE) ───
     socket.on(
       "toggle-media",
       ({
         roomId,
         isMuted,
         isCameraOff,
+        isScreenSharing,
       }: {
         roomId: string;
         isMuted?: boolean;
         isCameraOff?: boolean;
+        isScreenSharing?: boolean;
       }) => {
         const roomMap = roomParticipants.get(roomId);
         if (roomMap && roomMap.has(socket.id)) {
           const user = roomMap.get(socket.id)!;
           if (typeof isMuted === "boolean") user.isMuted = isMuted;
           if (typeof isCameraOff === "boolean") user.isCameraOff = isCameraOff;
+          if (typeof isScreenSharing === "boolean") {
+            user.isScreenSharing = isScreenSharing;
+            const shareState = getOrCreateScreenShareState(roomId);
+            if (isScreenSharing) {
+              shareState.currentPresenterSocketId = socket.id;
+              shareState.currentPresenterUserId = user.userId;
+            } else if (shareState.currentPresenterSocketId === socket.id) {
+              shareState.currentPresenterSocketId = undefined;
+              shareState.currentPresenterUserId = undefined;
+            }
+          }
           roomMap.set(socket.id, user);
 
           socket.to(roomId).emit("user-media-toggled", {
@@ -474,8 +585,199 @@ export const setupSocket = (server: HttpServer): Server => {
             userId: user.userId,
             isMuted: user.isMuted,
             isCameraOff: user.isCameraOff,
+            isScreenSharing: user.isScreenSharing,
           });
         }
+      }
+    );
+
+    // ─── 5.1 SCREEN SHARE PERMISSION HANDLERS ─────────────────
+    // A. Guest requests permission to share screen
+    socket.on(
+      "request-screen-share-permission",
+      ({
+        roomId,
+        userId,
+        userName,
+      }: {
+        roomId: string;
+        userId: string;
+        userName: string;
+      }) => {
+        const host = roomHosts.get(roomId);
+        if (host) {
+          console.log(
+            `[Screen Share Request] "${userName}" (${socket.id}) requested screen share permission in "${roomId}"`
+          );
+          io.to(host.socketId).emit("screen-share-request-received", {
+            requesterSocketId: socket.id,
+            userId,
+            userName: userName || "Participant",
+            roomId,
+          });
+        }
+      }
+    );
+
+    // B. Host responds to screen share request
+    socket.on(
+      "respond-screen-share-request",
+      ({
+        roomId,
+        requesterSocketId,
+        userId,
+        allowed,
+      }: {
+        roomId: string;
+        requesterSocketId: string;
+        userId?: string;
+        allowed: boolean;
+      }) => {
+        const shareState = getOrCreateScreenShareState(roomId);
+        if (allowed) {
+          shareState.allowedSocketIds.add(requesterSocketId);
+          if (userId) shareState.allowedUserIds.add(userId);
+        } else {
+          shareState.allowedSocketIds.delete(requesterSocketId);
+          if (userId) shareState.allowedUserIds.delete(userId);
+        }
+
+        io.to(requesterSocketId).emit("screen-share-permission-response", {
+          allowed,
+          roomId,
+        });
+
+        io.to(roomId).emit("screen-share-permissions-updated", {
+          allAllowed: shareState.allAllowed,
+          allowedUserIds: Array.from(shareState.allowedUserIds),
+        });
+      }
+    );
+
+    // C. Host grants/revokes permission for a specific user
+    socket.on(
+      "set-screen-share-permission",
+      ({
+        roomId,
+        targetSocketId,
+        targetUserId,
+        allowed,
+      }: {
+        roomId: string;
+        targetSocketId?: string;
+        targetUserId?: string;
+        allowed: boolean;
+      }) => {
+        const shareState = getOrCreateScreenShareState(roomId);
+        if (allowed) {
+          if (targetSocketId) shareState.allowedSocketIds.add(targetSocketId);
+          if (targetUserId) shareState.allowedUserIds.add(targetUserId);
+        } else {
+          if (targetSocketId) {
+            shareState.allowedSocketIds.delete(targetSocketId);
+            io.to(targetSocketId).emit("force-stop-screen-share");
+          }
+          if (targetUserId) shareState.allowedUserIds.delete(targetUserId);
+        }
+
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("screen-share-permission-response", {
+            allowed,
+            roomId,
+          });
+        }
+
+        io.to(roomId).emit("screen-share-permissions-updated", {
+          allAllowed: shareState.allAllowed,
+          allowedUserIds: Array.from(shareState.allowedUserIds),
+        });
+      }
+    );
+
+    // D. Host toggles room-wide screen share permission (allow anyone)
+    socket.on(
+      "toggle-all-screen-share",
+      ({ roomId, allAllowed }: { roomId: string; allAllowed: boolean }) => {
+        const shareState = getOrCreateScreenShareState(roomId);
+        shareState.allAllowed = allAllowed;
+
+        if (!allAllowed) {
+          const host = roomHosts.get(roomId);
+          const roomMap = roomParticipants.get(roomId);
+          if (roomMap) {
+            roomMap.forEach((user, sockId) => {
+              const isH = host?.socketId === sockId;
+              const isPermitted =
+                shareState.allowedUserIds.has(user.userId) ||
+                shareState.allowedSocketIds.has(sockId);
+              if (!isH && !isPermitted && user.isScreenSharing) {
+                io.to(sockId).emit("force-stop-screen-share");
+              }
+            });
+          }
+        }
+
+        io.to(roomId).emit("screen-share-permissions-updated", {
+          allAllowed: shareState.allAllowed,
+          allowedUserIds: Array.from(shareState.allowedUserIds),
+        });
+      }
+    );
+
+    // E. Host force stops any participant's active screen share
+    socket.on(
+      "stop-participant-screen-share",
+      ({ roomId, targetSocketId }: { roomId: string; targetSocketId: string }) => {
+        if (targetSocketId) {
+          io.to(targetSocketId).emit("force-stop-screen-share");
+        }
+      }
+    );
+
+    // ─── 5.2 REAL-TIME EMOJI REACTIONS ────────────────────────
+    socket.on(
+      "send-reaction",
+      ({
+        roomId,
+        reaction,
+      }: {
+        roomId: string;
+        reaction: {
+          id: string;
+          emoji: string;
+          userId: string;
+          senderName: string;
+          senderAvatar?: string;
+          timestamp: number;
+        };
+      }) => {
+        if (!roomId || !reaction) return;
+        io.to(roomId).emit("new-reaction", reaction);
+      }
+    );
+
+    // ─── 5.3 REAL-TIME LIVE CAPTIONS (SPEECH & TRANSLATION) ───
+    socket.on(
+      "send-caption",
+      ({
+        roomId,
+        caption,
+      }: {
+        roomId: string;
+        caption: {
+          id: string;
+          userId: string;
+          senderName: string;
+          senderAvatar?: string;
+          originalText: string;
+          text: string;
+          spokenLang: string;
+          targetLang: string;
+          timestamp: number;
+        };
+      }) => {
+        if (!roomId || !caption) return;
+        io.to(roomId).emit("new-caption", caption);
       }
     );
 
@@ -562,8 +864,23 @@ export const setupSocket = (server: HttpServer): Server => {
           `[Room Left] "${userName}" (${socket.id}) exited "${roomId}". Remaining: ${roomMap.size}`
         );
 
+        const shareState = roomScreenShareState.get(roomId);
+        if (shareState) {
+          shareState.allowedSocketIds.delete(socket.id);
+          if (shareState.currentPresenterSocketId === socket.id) {
+            shareState.currentPresenterSocketId = undefined;
+            shareState.currentPresenterUserId = undefined;
+            socket.to(roomId).emit("user-media-toggled", {
+              socketId: socket.id,
+              userId,
+              isScreenSharing: false,
+            });
+          }
+        }
+
         if (roomMap.size === 0) {
           roomParticipants.delete(roomId);
+          roomScreenShareState.delete(roomId);
         } else {
           socket.to(roomId).emit("user-disconnected", {
             socketId: socket.id,

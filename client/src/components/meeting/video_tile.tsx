@@ -137,13 +137,13 @@ const VideoTile = ({
   };
 
   const hasVideoTrack = stream && stream.getVideoTracks().length > 0;
-  const showVideo = !isCameraOff && hasVideoTrack;
+  const showVideo = (!isCameraOff || isScreenSharing) && hasVideoTrack;
 
   return (
     <div
       className={`group relative flex h-full w-full items-center justify-center overflow-hidden rounded-3xl bg-[#0b180e] border border-emerald-900/30 shadow-lg ${
         isSpeaking
-          ? "ring-2 ring-[#84cc16] shadow-xl shadow-lime-500/20"
+          ? "ring-2 ring-[#8be00d] shadow-xl shadow-lime-500/20"
           : "hover:border-emerald-700/50"
       }`}
     >
@@ -164,9 +164,11 @@ const VideoTile = ({
         autoPlay
         playsInline
         muted={true}
-        className={`h-full w-full object-cover ${
-          showVideo ? "opacity-100" : "opacity-0 absolute"
-        } ${isLocal && !isScreenSharing ? "scale-x-[-1]" : ""}`}
+        className={`h-full w-full ${
+          isScreenSharing ? "object-contain bg-black" : "object-cover"
+        } ${showVideo ? "opacity-100" : "opacity-0 absolute"} ${
+          isLocal && !isScreenSharing ? "scale-x-[-1]" : ""
+        }`}
       />
 
       {/* ─── Camera Off Fallback: Modern Ambient Gradient + Initials Badge ─── */}

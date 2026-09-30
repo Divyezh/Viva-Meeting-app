@@ -120,6 +120,14 @@ const speakerTestUri = createWavDataUri(0.8, (t) => {
   return env * wave * 0.5;
 });
 
+// 7. Reaction Pop / Bubble Sound
+const reactionPopUri = createWavDataUri(0.18, (t) => {
+  const env = Math.exp(-t * 16.0);
+  const freq = 750 + 350 * Math.sin(Math.PI * t / 0.18);
+  const wave = Math.sin(2 * Math.PI * freq * t);
+  return env * wave * 0.35;
+});
+
 // ─── Howler Howl Instances ────────────────────────────────────────
 
 const sounds = {
@@ -129,6 +137,7 @@ const sounds = {
   micOff: new Howl({ src: [micOffUri], html5: false, volume: 0.5 }),
   chat: new Howl({ src: [chatPingUri], html5: false, volume: 0.55 }),
   speakerTest: new Howl({ src: [speakerTestUri], html5: false, volume: 0.75 }),
+  reaction: new Howl({ src: [reactionPopUri], html5: false, volume: 0.5 }),
 };
 
 // Current active voice playback Howl instance
@@ -189,6 +198,17 @@ export const soundEffects = {
       sounds.chat.play();
     } catch (e) {
       console.debug("Howler chat sound notice:", e);
+    }
+  },
+
+  /**
+   * Play bubble pop sound when an emoji reaction occurs
+   */
+  playReaction: () => {
+    try {
+      sounds.reaction.play();
+    } catch (e) {
+      console.debug("Howler reaction sound notice:", e);
     }
   },
 

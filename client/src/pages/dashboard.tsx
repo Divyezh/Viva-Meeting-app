@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, ArrowRight, Shield, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, ArrowRight, Shield, Mic, Video, Clock, Calendar, Sparkles } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { useUser } from "@clerk/clerk-react";
 import NewMeetingModal from "../components/meeting/new_meeting_modal";
@@ -12,6 +12,16 @@ const Dashboard = () => {
   const [isNewMeetingModalOpen, setIsNewMeetingModalOpen] = useState(false);
   const [isJoinMeetingModalOpen, setIsJoinMeetingModalOpen] = useState(false);
 
+  // Live Date & Time Engine
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   usePageSEO({
     title: "Viva Meeting - High Quality Instant Video Calls",
     description:
@@ -20,6 +30,24 @@ const Dashboard = () => {
   });
 
   const activeUserName = user?.fullName || user?.firstName || "Divyesh Soni";
+
+  // Formatted Time, Day and Date
+  const formattedTime = currentTime.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  const formattedDay = currentTime.toLocaleDateString([], {
+    weekday: "long",
+  });
+
+  const formattedDate = currentTime.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   const handleOpenNewMeeting = () => {
     setIsNewMeetingModalOpen(true);
@@ -104,73 +132,82 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ─── Hero Visual: Realistic Video Tile Grid on Downward Olive-Pista Shader ─── */}
+      {/* ─── Hero Visual: Divyesh Soni Live Stage + Real-Time Clock ─── */}
       <div className="mt-12 sm:mt-16 w-full max-w-3xl mx-auto">
-        <div className="rounded-3xl border border-white/80 bg-white/85 p-3.5 sm:p-5 shadow-2xl shadow-emerald-950/20 backdrop-blur-xl">
-          {/* 4 Participant Mock Video Tiles (2x2 Grid) */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5">
-            {/* Tile 1: Active User (Host) */}
-            <div className="relative aspect-video rounded-2xl bg-linear-to-br from-[#1b3d22] via-[#122818] to-[#0a180f] border border-lime-400/40 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden shadow-inner">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-white truncate">{activeUserName} (You)</span>
+        <div className="rounded-3xl border border-white/80 bg-white/90 p-4 sm:p-6 shadow-2xl shadow-emerald-950/20 backdrop-blur-xl">
+          {/* Header Bar with Live Clock, Day & Date */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-2xl sm:text-3xl font-light tracking-tight text-slate-900 tabular-nums">
+                <Clock className="h-5 w-5 text-[#4d7c0f] shrink-0" />
+                <span>{formattedTime}</span>
+              </div>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+              <div className="flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-600">
+                <Calendar className="h-3.5 w-3.5 text-[#4d7c0f] shrink-0" />
+                <span className="font-semibold text-slate-800">{formattedDay}</span>, {formattedDate}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200/80 px-3.5 py-1 text-xs font-semibold text-[#3f6212]">
+              <span className="h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
+              <span>Ready to Connect</span>
+            </div>
+          </div>
+
+          {/* Single Divyesh Soni Video Tile Preview */}
+          <div className="relative aspect-video w-full rounded-2xl bg-linear-to-br from-[#122818] via-[#0b1b10] to-[#07130a] border border-emerald-800/40 p-4 sm:p-6 flex flex-col justify-between overflow-hidden shadow-2xl">
+            {/* Top Bar on Video Tile */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 rounded-full bg-black/60 border border-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur-md shadow-xs">
                 <span className="h-2 w-2 rounded-full bg-[#a3e635] animate-pulse" />
+                <span className="font-semibold text-white">{activeUserName} (You)</span>
               </div>
-              <div className="my-auto flex items-center justify-center">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-[#3f6212] border border-lime-300/40 flex items-center justify-center text-sm font-bold text-white shadow-md">
-                  {activeUserName.charAt(0)}
-                </div>
-              </div>
-              <div className="flex items-center justify-end gap-1.5 text-[#a3e635]">
-                <Mic className="h-3.5 w-3.5" />
-                <Video className="h-3.5 w-3.5" />
+
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-lime-400 bg-emerald-950/80 border border-emerald-700/50 px-3 py-1 rounded-full backdrop-blur-md">
+                <Sparkles className="h-3 w-3" />
+                <span>HD Video Enabled</span>
               </div>
             </div>
 
-            {/* Tile 2: Participant 1 */}
-            <div className="relative aspect-video rounded-2xl bg-slate-900/90 border border-white/10 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-white">Sarah Jenkins</span>
-              </div>
-              <div className="my-auto flex items-center justify-center">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-emerald-800 flex items-center justify-center text-sm font-bold text-emerald-200">
-                  SJ
+            {/* Center: Divyesh Soni Avatar & Status */}
+            <div className="my-auto flex flex-col items-center justify-center gap-3">
+              <div className="relative flex items-center justify-center">
+                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-linear-to-tr from-[#1b3d22] to-[#3f6212] border-2 border-lime-400/60 flex items-center justify-center text-2xl sm:text-3xl font-bold text-white shadow-2xl shadow-lime-950/50">
+                  {activeUserName.charAt(0).toUpperCase()}
                 </div>
+                <span className="absolute bottom-0 right-0 flex h-4 w-4 rounded-full bg-[#84cc16] border-2 border-[#0b1b10] shadow-xs" />
               </div>
-              <div className="flex items-center justify-end gap-1.5 text-slate-400">
-                <MicOff className="h-3.5 w-3.5 text-red-400" />
-                <Video className="h-3.5 w-3.5 text-emerald-400" />
+
+              <div className="text-center">
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                  {activeUserName}
+                </h3>
+                <p className="text-xs text-emerald-200/70 mt-0.5">
+                  Microphone and camera are configured and ready
+                </p>
               </div>
             </div>
 
-            {/* Tile 3: Participant 2 */}
-            <div className="relative aspect-video rounded-2xl bg-slate-900/90 border border-white/10 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-white">Alex Rivera</span>
-              </div>
-              <div className="my-auto flex items-center justify-center">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-teal-800 flex items-center justify-center text-sm font-bold text-teal-200">
-                  AR
-                </div>
-              </div>
-              <div className="flex items-center justify-end gap-1.5 text-slate-400">
-                <Mic className="h-3.5 w-3.5 text-emerald-400" />
-                <Video className="h-3.5 w-3.5 text-emerald-400" />
-              </div>
-            </div>
+            {/* Bottom Bar: Quick Audio/Video indicators */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+              <span className="text-[11px] text-emerald-300/80 font-medium">
+                Click <span className="font-bold text-white">Start Instant Meeting</span> above to begin
+              </span>
 
-            {/* Tile 4: Participant 3 */}
-            <div className="relative aspect-video rounded-2xl bg-slate-900/90 border border-white/10 p-3 sm:p-3.5 flex flex-col justify-between overflow-hidden">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-semibold text-white">Elena Rostova</span>
-              </div>
-              <div className="my-auto flex items-center justify-center">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-300">
-                  ER
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 border border-white/10 text-lime-400"
+                  title="Microphone Active"
+                >
+                  <Mic className="h-4 w-4" />
                 </div>
-              </div>
-              <div className="flex items-center justify-end gap-1.5 text-slate-400">
-                <MicOff className="h-3.5 w-3.5 text-red-400" />
-                <VideoOff className="h-3.5 w-3.5 text-red-400" />
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 border border-white/10 text-lime-400"
+                  title="Camera Active"
+                >
+                  <Video className="h-4 w-4" />
+                </div>
               </div>
             </div>
           </div>
@@ -179,7 +216,7 @@ const Dashboard = () => {
 
       {/* ─── Infrastructure Note ─── */}
       <div className="mt-8 sm:mt-10 text-center pb-2">
-        <p className="text-[11px] text-emerald-950/70 font-medium">
+        <p className="text-xs text-white/85 font-medium tracking-wide">
           Trusted infrastructure: WebRTC · End-to-end encrypted · Adaptive bitrate
         </p>
       </div>

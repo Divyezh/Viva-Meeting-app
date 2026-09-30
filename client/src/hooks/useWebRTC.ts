@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import socket from "../config/socket";
 import type { PeerStream, ChatMessage } from "../types";
 import soundEffects from "../utils/soundEffects";
+import toast from "react-hot-toast";
 
 interface UseWebRTCProps {
   roomId: string;
@@ -23,6 +24,8 @@ interface RemotePeerInfo {
   avatarUrl?: string;
   isMuted?: boolean;
   isCameraOff?: boolean;
+  isScreenSharing?: boolean;
+  canShareScreen?: boolean;
 }
 
 const ICE_SERVERS: RTCConfiguration = {
@@ -81,6 +84,18 @@ export const useWebRTC = ({
   const [isMuted, setIsMuted] = useState(initialMuted);
   const [isCameraOff, setIsCameraOff] = useState(initialCameraOff);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [canShareScreen, setCanShareScreen] = useState<boolean>(isHost);
+  const [allScreenShareAllowed, setAllScreenShareAllowed] = useState<boolean>(false);
+  const [screenShareRequests, setScreenShareRequests] = useState<
+    Array<{
+      requesterSocketId: string;
+      userId: string;
+      userName: string;
+      roomId: string;
+      createdAt: number;
+    }>
+  >([]);
   const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
 
   // References for WebRTC connections and media tracks
@@ -89,6 +104,7 @@ export const useWebRTC = ({
   const remoteStreams = useRef<Map<string, MediaStream>>(new Map());
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const stopScreenShareRef = useRef<() => void>(() => {});
   const audioContextRef = useRef<AudioContext | null>(null);
   const remoteAnalysers = useRef<Map<string, { ctx: AudioContext; animId: number }>>(new Map());
 
@@ -158,6 +174,8 @@ export const useWebRTC = ({
         avatarUrl?: string;
         isMuted?: boolean;
         isCameraOff?: boolean;
+        isScreenSharing?: boolean;
+        canShareScreen?: boolean;
       }
     ) => {
       if (info.userId === currentUser.userId) {
@@ -181,6 +199,14 @@ export const useWebRTC = ({
               ? info.isCameraOff
               : (prevPeer?.isCameraOff ?? false),
           isSpeaking: prevPeer?.isSpeaking || false,
+          isScreenSharing:
+            typeof info.isScreenSharing === "boolean"
+              ? info.isScreenSharing
+              : (prevPeer?.isScreenSharing ?? false),
+          canShareScreen:
+            typeof info.canShareScreen === "boolean"
+              ? info.canShareScreen
+              : (prevPeer?.canShareScreen ?? false),
         };
 
         if (index !== -1) {
@@ -480,6 +506,7 @@ export const useWebRTC = ({
               avatarUrl: currentUser.avatarUrl || "",
               isMuted,
               isCameraOff,
+              isScreenSharing,
             },
           });
         } catch (err) {
@@ -597,16 +624,18 @@ export const useWebRTC = ({
       }
     };
 
-    // F. Remote Peer Media State Change (Mute / Camera)
+    // F. Remote Peer Media State Change (Mute / Camera / Screen Share)
     const handleUserMediaToggled = ({
       socketId,
       isMuted: peerMuted,
       isCameraOff: peerCameraOff,
+      isScreenSharing: peerScreenSharing,
     }: {
       socketId: string;
       userId: string;
-      isMuted: boolean;
-      isCameraOff: boolean;
+      isMuted?: boolean;
+      isCameraOff?: boolean;
+      isScreenSharing?: boolean;
     }) => {
       setPeers((prev) =>
         prev.map((p) => {
@@ -615,6 +644,8 @@ export const useWebRTC = ({
               ...p,
               isMuted: peerMuted !== undefined ? peerMuted : p.isMuted,
               isCameraOff: peerCameraOff !== undefined ? peerCameraOff : p.isCameraOff,
+              isScreenSharing:
+                peerScreenSharing !== undefined ? peerScreenSharing : p.isScreenSharing,
             };
           }
           return p;
@@ -622,8 +653,87 @@ export const useWebRTC = ({
       );
     };
 
+    // Screen Share Permissions Status Synced from Server
+    const handleScreenShareStatus = ({
+      canShare,
+      allAllowed,
+      allowedUserIds,
+    }: {
+      canShare: boolean;
+      allAllowed: boolean;
+      allowedUserIds: string[];
+    }) => {
+      setCanShareScreen(isHost || canShare);
+      setAllScreenShareAllowed(allAllowed);
+      setPeers((prev) =>
+        prev.map((p) => ({
+          ...p,
+          canShareScreen: isHost || allAllowed || allowedUserIds.includes(p.userId),
+        }))
+      );
+    };
+
+    const handleScreenSharePermissionsUpdated = ({
+      allAllowed,
+      allowedUserIds,
+    }: {
+      allAllowed: boolean;
+      allowedUserIds: string[];
+    }) => {
+      setAllScreenShareAllowed(allAllowed);
+      setCanShareScreen(isHost || allAllowed || allowedUserIds.includes(currentUser.userId));
+      setPeers((prev) =>
+        prev.map((p) => ({
+          ...p,
+          canShareScreen: isHost || allAllowed || allowedUserIds.includes(p.userId),
+        }))
+      );
+    };
+
+    const handleScreenSharePermissionResponse = ({ allowed }: { allowed: boolean }) => {
+      setCanShareScreen(isHost || allowed);
+      if (allowed) {
+        toast.success("Host granted you permission to share your screen!", {
+          style: { background: "#081307", color: "#ffffff", border: "1px solid #4ade80" },
+        });
+      } else {
+        toast.error("The host declined your screen share request.", {
+          style: { background: "#081307", color: "#ffffff", border: "1px solid #ef4444" },
+        });
+      }
+    };
+
+    const handleForceStopScreenShare = () => {
+      stopScreenShareRef.current();
+      toast("The host stopped your screen share", {
+        icon: "🛑",
+        style: { background: "#081307", color: "#ffffff", border: "1px solid #ef4444" },
+      });
+    };
+
+    const handleScreenShareRequestReceived = (req: {
+      requesterSocketId: string;
+      userId: string;
+      userName: string;
+      roomId: string;
+    }) => {
+      soundEffects.playJoin();
+      setScreenShareRequests((prev) => {
+        const filtered = prev.filter(
+          (r) => r.requesterSocketId !== req.requesterSocketId && r.userId !== req.userId
+        );
+        return [...filtered, { ...req, createdAt: Date.now() }];
+      });
+    };
+
     // G. Remote Peer Disconnected
-    const handleUserDisconnected = ({ socketId }: { socketId: string }) => {
+    const handleUserDisconnected = ({
+      socketId,
+      userId,
+    }: {
+      socketId: string;
+      userId?: string;
+    }) => {
       const analyser = remoteAnalysers.current.get(socketId);
       if (analyser) {
         cancelAnimationFrame(analyser.animId);
@@ -638,7 +748,9 @@ export const useWebRTC = ({
       }
       remoteStreams.current.delete(socketId);
       pendingCandidates.current.delete(socketId);
-      setPeers((prev) => prev.filter((p) => p.peerId !== socketId));
+      setPeers((prev) =>
+        prev.filter((p) => p.peerId !== socketId && (!userId || p.userId !== userId))
+      );
 
       soundEffects.playLeave();
     };
@@ -662,6 +774,13 @@ export const useWebRTC = ({
     socket.on("webrtc-answer", handleWebRTCAnswer);
     socket.on("ice-candidate", handleICECandidate);
     socket.on("user-media-toggled", handleUserMediaToggled);
+    socket.on("screen-share-status", handleScreenShareStatus);
+    socket.on("screen-share-permissions-updated", handleScreenSharePermissionsUpdated);
+    socket.on("screen-share-permission-response", handleScreenSharePermissionResponse);
+    socket.on("force-stop-screen-share", handleForceStopScreenShare);
+    if (isHost) {
+      socket.on("screen-share-request-received", handleScreenShareRequestReceived);
+    }
     socket.on("user-disconnected", handleUserDisconnected);
     socket.on("new-chat-message", handleNewChatMessage);
 
@@ -672,10 +791,17 @@ export const useWebRTC = ({
       socket.off("webrtc-answer", handleWebRTCAnswer);
       socket.off("ice-candidate", handleICECandidate);
       socket.off("user-media-toggled", handleUserMediaToggled);
+      socket.off("screen-share-status", handleScreenShareStatus);
+      socket.off("screen-share-permissions-updated", handleScreenSharePermissionsUpdated);
+      socket.off("screen-share-permission-response", handleScreenSharePermissionResponse);
+      socket.off("force-stop-screen-share", handleForceStopScreenShare);
+      if (isHost) {
+        socket.off("screen-share-request-received", handleScreenShareRequestReceived);
+      }
       socket.off("user-disconnected", handleUserDisconnected);
       socket.off("new-chat-message", handleNewChatMessage);
     };
-  }, [createPeerConnection, currentUser, isMuted, isCameraOff, setPeerStream]);
+  }, [createPeerConnection, currentUser, isMuted, isCameraOff, isHost, setPeerStream]);
 
   // ─── 4. User Actions: Toggle Mute ───────────────────────────
   const toggleMute = useCallback(() => {
@@ -737,13 +863,28 @@ export const useWebRTC = ({
         }
       });
     }
+    setScreenStream(null);
     setIsScreenSharing(false);
-  }, []);
+    socket.emit("toggle-media", {
+      roomId,
+      isMuted,
+      isCameraOff,
+      isScreenSharing: false,
+    });
+  }, [roomId, isMuted, isCameraOff]);
+
+  useEffect(() => {
+    stopScreenShareRef.current = stopScreenShare;
+  }, [stopScreenShare]);
 
   const toggleScreenShare = useCallback(async () => {
     if (isScreenSharing) {
       stopScreenShare();
     } else {
+      if (!isHost && !canShareScreen && !allScreenShareAllowed) {
+        toast.error("Screen sharing permission required from host.");
+        return;
+      }
       // Start Screen Share
       try {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
@@ -765,12 +906,101 @@ export const useWebRTC = ({
           }
         });
 
+        setScreenStream(displayStream);
         setIsScreenSharing(true);
+        socket.emit("toggle-media", {
+          roomId,
+          isMuted,
+          isCameraOff,
+          isScreenSharing: true,
+        });
       } catch (err) {
         console.warn("Screen share cancelled or failed:", err);
       }
     }
-  }, [isScreenSharing, stopScreenShare]);
+  }, [
+    isScreenSharing,
+    isHost,
+    canShareScreen,
+    allScreenShareAllowed,
+    stopScreenShare,
+    roomId,
+    isMuted,
+    isCameraOff,
+  ]);
+
+  const requestScreenSharePermission = useCallback(() => {
+    socket.emit("request-screen-share-permission", {
+      roomId,
+      userId: currentUser.userId,
+      userName: currentUser.userName,
+    });
+    toast("Requested screen share permission from host...", {
+      icon: "⏳",
+      style: { background: "#081307", color: "#ffffff", border: "1px solid #4ade80" },
+    });
+  }, [roomId, currentUser]);
+
+  const respondScreenShareRequest = useCallback(
+    (requesterSocketId: string, userId: string, allowed: boolean) => {
+      socket.emit("respond-screen-share-request", {
+        roomId,
+        requesterSocketId,
+        userId,
+        allowed,
+      });
+      setScreenShareRequests((prev) =>
+        prev.filter((r) => r.requesterSocketId !== requesterSocketId)
+      );
+      if (allowed) {
+        toast.success("Granted screen share permission");
+      } else {
+        toast("Declined screen share request");
+      }
+    },
+    [roomId]
+  );
+
+  const setParticipantScreenSharePermission = useCallback(
+    (targetSocketId: string, targetUserId: string, allowed: boolean) => {
+      socket.emit("set-screen-share-permission", {
+        roomId,
+        targetSocketId,
+        targetUserId,
+        allowed,
+      });
+      toast.success(
+        allowed ? "Screen share permission granted" : "Screen share permission revoked"
+      );
+    },
+    [roomId]
+  );
+
+  const toggleAllScreenShare = useCallback(
+    (allAllowed: boolean) => {
+      socket.emit("toggle-all-screen-share", {
+        roomId,
+        allAllowed,
+      });
+      toast.success(
+        allAllowed
+          ? "Screen share unlocked for all participants"
+          : "Screen share restricted to host & permitted users"
+      );
+    },
+    [roomId]
+  );
+
+  const stopParticipantScreenShare = useCallback(
+    (targetSocketId: string) => {
+      socket.emit("stop-participant-screen-share", {
+        roomId,
+        targetSocketId,
+      });
+      toast("Stopped participant's screen share");
+    },
+    [roomId]
+  );
 
   // ─── 7. User Actions: Send Chat Message ─────────────────────
   const sendMessage = useCallback(
@@ -820,15 +1050,25 @@ export const useWebRTC = ({
 
   return {
     localStream,
+    screenStream,
     peers,
     messages,
     isMuted,
     isCameraOff,
     isScreenSharing,
+    canShareScreen,
+    allScreenShareAllowed,
+    screenShareRequests,
     isLocalSpeaking,
     toggleMute,
     toggleCamera,
     toggleScreenShare,
+    stopScreenShare,
+    requestScreenSharePermission,
+    respondScreenShareRequest,
+    setParticipantScreenSharePermission,
+    toggleAllScreenShare,
+    stopParticipantScreenShare,
     sendMessage,
     leaveMeeting,
   };

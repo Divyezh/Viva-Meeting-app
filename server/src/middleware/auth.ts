@@ -72,3 +72,63 @@ export const requireAuth = async (
       .json({ success: false, message: "Invalid or expired token", error: error.message });
   }
 };
+
+export const optionalAuth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      req.user = {
+        id: (req.headers["x-user-id"] as string) || `guest_${Date.now()}`,
+        email: undefined,
+        fullName: (req.body?.fullName as string) || "Guest Participant",
+        plan: "free",
+      };
+      return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (clerk && token) {
+      try {
+        const verifiedToken = await clerk.authenticateRequest(req as any);
+        if (verifiedToken && typeof verifiedToken.toAuth === "function") {
+          const authData = verifiedToken.toAuth();
+          if (authData && authData.userId) {
+            const userId = authData.userId;
+            const userRecord = memoryUsers.get(userId);
+
+            req.user = {
+              id: userId,
+              plan: userRecord?.plan || "free",
+              email: userRecord?.email || undefined,
+              fullName: userRecord?.fullName || undefined,
+            };
+            return next();
+          }
+        }
+      } catch (clerkErr) {
+        console.warn("[Auth] Optional Clerk verification error, falling back:", clerkErr);
+      }
+    }
+
+    req.user = {
+      id: (req.headers["x-user-id"] as string) || `guest_${Date.now()}`,
+      email: undefined,
+      fullName: (req.body?.fullName as string) || "Guest Participant",
+      plan: "free",
+    };
+    next();
+  } catch (_err) {
+    req.user = {
+      id: `guest_${Date.now()}`,
+      fullName: "Guest Participant",
+      plan: "free",
+    };
+    next();
+  }
+};

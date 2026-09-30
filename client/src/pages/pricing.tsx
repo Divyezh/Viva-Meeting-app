@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, QrCode } from "lucide-react";
 import usePageSEO from "../hooks/usePageSEO";
+import PaymentModal from "../components/payment_modal";
 
 const freeFeatures = [
-  "Up to 4 participants",
+  "Up to 8 participants",
   "40-minute meeting limit",
   "30 meetings per month",
   "Standard video quality",
@@ -24,11 +25,12 @@ const Pricing = () => {
   usePageSEO({
     title: "Pricing & Plans - Free & Pro | Viva Meeting",
     description:
-      "Compare affordable Viva Meeting plans. Free plan with 40-minute HD video calling or Pro plan with unlimited group conferences and recordings.",
+      "Compare affordable Viva Meeting plans. Free plan with up to 8 participants and 40-minute HD video calling, or Pro plan with unlimited group conferences and recordings.",
     canonicalPath: "/pricing",
   });
 
   const [isAnnual, setIsAnnual] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   return (
     <div className="w-full py-8 md:py-12">
@@ -139,12 +141,28 @@ const Pricing = () => {
             </div>
 
             {/* Bottom CTA */}
-            <button className="w-full rounded-full bg-[#3f6212] py-3 text-xs font-semibold text-white shadow-md shadow-[#3f6212]/20 transition-all hover:bg-[#365314] hover:shadow-lg active:scale-95 sm:text-sm">
-              Manage plan
-            </button>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-[#3f6212] hover:bg-[#365314] py-3 text-xs font-bold text-white shadow-md shadow-[#3f6212]/20 transition-all hover:shadow-lg active:scale-95 sm:text-sm cursor-pointer"
+              >
+                <QrCode className="h-4 w-4 text-lime-300" />
+                <span>Pay with QR Code (Instant Upgrade)</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Interactive Payment QR Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        planName="Viva Meeting Premium"
+        amount={isAnnual ? "$76.80 (₹6,400 / yr)" : "$8 (₹699 / mo)"}
+        billingCycle={isAnnual ? "annually" : "monthly"}
+      />
     </div>
   );
 };

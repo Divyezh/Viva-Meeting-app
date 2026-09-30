@@ -9,12 +9,18 @@ import Login from "./pages/login";
 import SignUpPage from "./pages/signup";
 import PrivacyPolicy from "./pages/privacy_policy";
 import TermsOfService from "./pages/terms_of_service";
+import PaymentPage from "./pages/payment";
+
+import JoinPage from "./pages/join";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Auth & Legal Routes */}
+        {/* Public Auth, Legal & Guest Join Routes (No Google/Clerk Login Required) */}
+        <Route path="/join" element={<JoinPage />} />
+        <Route path="/join/:meetingId" element={<JoinPage />} />
+        <Route path="/meeting/:roomId" element={<MeetingRoom />} />
         <Route path="/login/*" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup/*" element={<SignUpPage />} />
@@ -24,7 +30,7 @@ function App() {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
 
-        {/* Protected Routes with Layout */}
+        {/* Protected App Routes (Requires Login or Sign Up) */}
         <Route
           element={
             <ProtectedRoute>
@@ -35,10 +41,11 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/sessions" element={<Sessions />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/meeting/:roomId" element={<MeetingRoom />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/pay" element={<PaymentPage />} />
         </Route>
 
-        {/* Default redirect */}
+        {/* Default redirects */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

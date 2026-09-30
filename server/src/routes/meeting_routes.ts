@@ -7,13 +7,13 @@ import {
   deleteSession,
 } from "../controllers/meeting_controller.js";
 import { handleClerkWebhook } from "../controllers/webhook_controller.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, optionalAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-// Meeting Protected Endpoints
+// Meeting Endpoints
 router.post("/create", requireAuth, createMeeting);
-router.post("/join", requireAuth, joinMeeting);
+router.post("/join", optionalAuth, joinMeeting);
 router.get("/sessions", requireAuth, getSessions);
 router.get("/sessions/:id", requireAuth, getSessionDetail);
 router.delete("/sessions/:id", requireAuth, deleteSession);

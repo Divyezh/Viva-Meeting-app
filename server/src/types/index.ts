@@ -48,6 +48,8 @@ export interface SocketParticipant {
   avatarUrl: string;
   isMuted: boolean;
   isCameraOff: boolean;
+  isScreenSharing?: boolean;
+  canShareScreen?: boolean;
   joinedAt: string;
 }
 

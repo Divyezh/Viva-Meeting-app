@@ -56,4 +56,6 @@ export interface PeerStream {
   isMuted: boolean;
   isCameraOff: boolean;
   isSpeaking: boolean;
+  isScreenSharing?: boolean;
+  canShareScreen?: boolean;
 }

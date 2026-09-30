@@ -10,7 +10,9 @@ import {
   FileText,
   Smile,
   Circle,
-  Sliders,
+  Lock,
+  Subtitles,
+  Languages,
 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -19,10 +21,11 @@ interface ControlBarProps {
   isMuted: boolean;
   isCameraOff: boolean;
   isScreenSharing: boolean;
+  canShareScreen?: boolean;
   isChatOpen: boolean;
   isTranscriptOpen?: boolean;
   isParticipantsOpen: boolean;
-  isAudioSettingsOpen?: boolean;
+  isCaptionsEnabled?: boolean;
   unreadCount: number;
   participantCount: number;
   roomId: string;
@@ -30,10 +33,13 @@ interface ControlBarProps {
   onToggleMute: () => void;
   onToggleCamera: () => void;
   onToggleScreenShare: () => void;
+  onRequestScreenSharePermission?: () => void;
   onToggleChat: () => void;
   onToggleTranscript?: () => void;
   onToggleParticipants: () => void;
-  onToggleAudioSettings?: () => void;
+  onToggleCaptions?: () => void;
+  onOpenCaptionsModal?: () => void;
+  onSendReaction?: (emoji: string) => void;
   onLeaveMeeting: () => void;
 }
 
@@ -41,19 +47,24 @@ const ControlBar = ({
   isMuted,
   isCameraOff,
   isScreenSharing,
+  canShareScreen = false,
   isChatOpen,
   isTranscriptOpen = true,
   isParticipantsOpen,
-  isAudioSettingsOpen = false,
+  isCaptionsEnabled = false,
   unreadCount,
   participantCount,
+  isHost,
   onToggleMute,
   onToggleCamera,
   onToggleScreenShare,
+  onRequestScreenSharePermission,
   onToggleChat,
   onToggleTranscript,
   onToggleParticipants,
-  onToggleAudioSettings,
+  onToggleCaptions,
+  onOpenCaptionsModal,
+  onSendReaction,
   onLeaveMeeting,
 }: ControlBarProps) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -89,15 +100,9 @@ const ControlBar = ({
   };
 
   const handleSendReaction = (emoji: string) => {
-    toast(`Reacted with ${emoji}`, {
-      style: {
-        background: "#081307",
-        color: "#ffffff",
-        border: "1px solid #365314",
-        borderRadius: "9999px",
-        fontSize: "13px",
-      },
-    });
+    if (onSendReaction) {
+      onSendReaction(emoji);
+    }
     setShowReactions(false);
   };
 
@@ -105,12 +110,12 @@ const ControlBar = ({
     <div className="fixed bottom-2.5 sm:bottom-6 left-1/2 z-40 -translate-x-1/2 max-w-[98vw] px-1 pointer-events-auto">
       {/* Reactions Floating Popup Menu */}
       {showReactions && (
-        <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-[#081307]/95 border border-emerald-800/50 px-3.5 py-1.5 backdrop-blur-xl shadow-2xl animate-fade-in">
-          {["👍", "❤️", "👏", "🎉", "🔥", "🚀", "🙌"].map((emoji) => (
+        <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 rounded-full bg-[#081307]/95 border border-emerald-800/60 px-3 py-1.5 backdrop-blur-xl shadow-2xl animate-fade-in z-50">
+          {["👍", "❤️", "👏", "🎉", "🔥", "🚀", "🙌", "😂", "😮", "🤝"].map((emoji) => (
             <button
               key={emoji}
               onClick={() => handleSendReaction(emoji)}
-              className="text-lg transition-transform hover:scale-130 active:scale-95"
+              className="text-lg sm:text-xl transition-transform hover:scale-135 active:scale-90 cursor-pointer p-1"
             >
               {emoji}
             </button>
@@ -123,28 +128,25 @@ const ControlBar = ({
         {/* 1. Record Button */}
         <button
           onClick={handleToggleRecord}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-            isRecording
-              ? "bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse"
-              : "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-          }`}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isRecording
+            ? "bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse"
+            : "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
+            }`}
           title={isRecording ? "Stop Recording" : "Record Meeting"}
         >
           <Circle
-            className={`h-4 w-4 ${
-              isRecording ? "fill-red-500 text-red-500" : "fill-emerald-400/80 text-emerald-400/80"
-            }`}
+            className={`h-4 w-4 ${isRecording ? "fill-red-500 text-red-500" : "fill-emerald-400/80 text-emerald-400/80"
+              }`}
           />
         </button>
 
         {/* 2. Microphone Toggle */}
         <button
           onClick={onToggleMute}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-            isMuted
-              ? "bg-red-500/90 text-white shadow-md shadow-red-900/30"
-              : "bg-[#142817] text-white border border-emerald-700/50 hover:bg-[#1e3a22] hover:border-lime-500/50"
-          }`}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isMuted
+            ? "bg-red-500/90 text-white shadow-md shadow-red-900/30"
+            : "bg-[#142817] text-white border border-emerald-700/50 hover:bg-[#1e3a22] hover:border-lime-500/50"
+            }`}
           title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
         >
           {isMuted ? (
@@ -157,11 +159,10 @@ const ControlBar = ({
         {/* 3. Camera Toggle */}
         <button
           onClick={onToggleCamera}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-            isCameraOff
-              ? "bg-red-500/90 text-white shadow-md shadow-red-900/30"
-              : "bg-[#142817] text-white border border-emerald-700/50 hover:bg-[#1e3a22] hover:border-lime-500/50"
-          }`}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isCameraOff
+            ? "bg-red-500/90 text-white shadow-md shadow-red-900/30"
+            : "bg-[#142817] text-white border border-emerald-700/50 hover:bg-[#1e3a22] hover:border-lime-500/50"
+            }`}
           title={isCameraOff ? "Turn on camera" : "Turn off camera"}
         >
           {isCameraOff ? (
@@ -173,15 +174,41 @@ const ControlBar = ({
 
         {/* 4. Screen Share Toggle */}
         <button
-          onClick={onToggleScreenShare}
-          className={`hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-            isScreenSharing
-              ? "bg-[#3f6212] text-white border border-lime-400 shadow-md shadow-lime-900/30"
+          onClick={() => {
+            if (isScreenSharing) {
+              onToggleScreenShare();
+            } else if (isHost || canShareScreen) {
+              onToggleScreenShare();
+            } else if (onRequestScreenSharePermission) {
+              onRequestScreenSharePermission();
+            } else {
+              toast.error("Screen sharing permission required from the host.");
+            }
+          }}
+          className={`relative hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isScreenSharing
+            ? "bg-[#3f6212] text-white border border-lime-400 shadow-md shadow-lime-900/30"
+            : !isHost && !canShareScreen
+              ? "bg-emerald-950/40 text-emerald-400/60 border border-emerald-900/40 hover:bg-emerald-900/40 hover:text-emerald-200"
               : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-          }`}
-          title="Share Screen"
+            }`}
+          title={
+            isScreenSharing
+              ? "Stop Sharing Screen"
+              : isHost || canShareScreen
+                ? "Share Screen"
+                : "Share Screen (Permission required from host)"
+          }
         >
           <MonitorUp className="h-4.5 w-4.5" />
+          {!isHost && !canShareScreen && !isScreenSharing && (
+            <span
+              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500/90 text-slate-950 shadow-xs"
+              title="Permission required"
+            >
+              <Lock className="h-2 w-2 text-slate-950 stroke-3
+            " />
+            </span>
+          )}
         </button>
 
         {/* 5. End Call Pill (Prominent Red) */}
@@ -198,11 +225,10 @@ const ControlBar = ({
         {onToggleTranscript && (
           <button
             onClick={onToggleTranscript}
-            className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-              isTranscriptOpen
-                ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
-                : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-            }`}
+            className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isTranscriptOpen
+              ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
+              : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
+              }`}
             title="Toggle Live Transcript & Notes"
           >
             <FileText className="h-4.5 w-4.5" />
@@ -212,11 +238,10 @@ const ControlBar = ({
         {/* 7. Chat Toggle */}
         <button
           onClick={onToggleChat}
-          className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-            isChatOpen
-              ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
-              : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-          }`}
+          className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isChatOpen
+            ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
+            : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
+            }`}
           title="In-meeting Chat"
         >
           <MessageSquare className="h-4.5 w-4.5" />
@@ -227,23 +252,57 @@ const ControlBar = ({
           )}
         </button>
 
-        {/* 8. Reactions Toggle */}
+        {/* 8. Live Captions (CC) Toggle */}
+        {onToggleCaptions && (
+          <div className="relative flex items-center">
+            <button
+              onClick={onToggleCaptions}
+              className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all cursor-pointer ${
+                isCaptionsEnabled
+                  ? "bg-[#3f6212] text-white border border-lime-400 shadow-md shadow-lime-950/40"
+                  : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
+              }`}
+              title={isCaptionsEnabled ? "Turn off Live Captions (CC)" : "Turn on Live Captions (CC)"}
+            >
+              <Subtitles className="h-4.5 w-4.5" />
+            </button>
+            {isCaptionsEnabled && (
+              <span className="absolute -top-1 -right-0.5 flex h-3 w-3 pointer-events-none">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#84cc16]"></span>
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* 9. Captions Language Settings Modal Trigger */}
+        {onOpenCaptionsModal && (
+          <button
+            onClick={onOpenCaptionsModal}
+            className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white transition-all cursor-pointer"
+            title="Captions & Language Settings (Hindi to English Translation)"
+          >
+            <Languages className="h-4.5 w-4.5 text-lime-400" />
+          </button>
+        )}
+
+        {/* 10. Reactions Toggle */}
         <button
           onClick={() => setShowReactions(!showReactions)}
-          className={`hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all cursor-pointer ${
             showReactions
               ? "bg-[#3f6212] text-white border border-lime-400/50"
               : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
           }`}
-          title="Reactions"
+          title="Reactions (Send emojis to screen)"
         >
           <Smile className="h-4.5 w-4.5" />
         </button>
 
-        {/* 9. Participants List */}
+        {/* 11. Participants List */}
         <button
           onClick={onToggleParticipants}
-          className={`relative hidden md:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
+          className={`relative hidden md:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all cursor-pointer ${
             isParticipantsOpen
               ? "bg-[#3f6212] text-white border border-lime-400/50"
               : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
@@ -255,22 +314,6 @@ const ControlBar = ({
             {participantCount}
           </span>
         </button>
-
-        {/* 10. Audio & Crystal-Clear Mic Settings */}
-        {onToggleAudioSettings && (
-          <button
-            onClick={onToggleAudioSettings}
-            className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${
-              isAudioSettingsOpen
-                ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
-                : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-            }`}
-            title="Audio & Crystal-Clear Mic Settings"
-          >
-            <Sliders className="h-4.5 w-4.5" />
-            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[#84cc16] ring-2 ring-[#081307]" />
-          </button>
-        )}
       </div>
     </div>
   );

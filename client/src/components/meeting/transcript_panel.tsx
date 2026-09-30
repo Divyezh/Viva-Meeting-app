@@ -12,6 +12,9 @@ import {
   VideoOff,
   Search,
   UserPlus,
+  Monitor,
+  MonitorUp,
+  MonitorOff,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ChatMessage } from "../../types";
@@ -24,6 +27,9 @@ export interface ParticipantItem {
   isMuted: boolean;
   isCameraOff: boolean;
   isLocal?: boolean;
+  isScreenSharing?: boolean;
+  canShareScreen?: boolean;
+  socketId?: string;
 }
 
 interface TranscriptPanelProps {
@@ -34,6 +40,15 @@ interface TranscriptPanelProps {
   initialTab?: "transcript" | "chat" | "notes" | "participants";
   participants?: ParticipantItem[];
   roomId?: string;
+  isHost?: boolean;
+  allScreenShareAllowed?: boolean;
+  onToggleAllScreenShare?: (allowed: boolean) => void;
+  onSetParticipantScreenShare?: (
+    targetSocketId: string,
+    targetUserId: string,
+    allowed: boolean
+  ) => void;
+  onStopParticipantScreenShare?: (targetSocketId: string) => void;
 }
 
 const TranscriptPanel = ({
@@ -44,6 +59,11 @@ const TranscriptPanel = ({
   initialTab = "chat",
   participants = [],
   roomId = "",
+  isHost = false,
+  allScreenShareAllowed = false,
+  onToggleAllScreenShare,
+  onSetParticipantScreenShare,
+  onStopParticipantScreenShare,
 }: TranscriptPanelProps) => {
   const [activeTab, setActiveTab] = useState<"transcript" | "chat" | "notes" | "participants">(
     initialTab
@@ -215,6 +235,40 @@ const TranscriptPanel = ({
               />
             </div>
 
+            {/* Host Screen Share Master Control Toggle */}
+            {isHost && (
+              <div className="rounded-2xl bg-zinc-900/40 border border-zinc-850 p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-lime-500/10 border border-lime-500/20 text-lime-400">
+                    <MonitorUp className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white">Allow anyone to share screen</div>
+                    <div className="text-[10px] text-zinc-400">
+                      {allScreenShareAllowed
+                        ? "All participants can share screen"
+                        : "Only permitted participants can share"}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onToggleAllScreenShare && onToggleAllScreenShare(!allScreenShareAllowed)
+                  }
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    allScreenShareAllowed ? "bg-lime-500" : "bg-zinc-800"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      allScreenShareAllowed ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
             {/* Direct Meeting Share Link Card */}
             <div className="rounded-2xl bg-zinc-900/30 border border-zinc-850/80 p-4 shadow-sm relative overflow-hidden">
               <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-emerald-500/3 blur-lg" />
@@ -285,8 +339,67 @@ const TranscriptPanel = ({
                     </div>
                   </div>
 
-                  {/* Device Status Icons */}
+                  {/* Device & Screen Share Status Controls */}
                   <div className="flex items-center gap-1.5">
+                    {/* Active Presenting Badge */}
+                    {p.isScreenSharing && (
+                      <span className="flex items-center gap-1 rounded-full bg-lime-500/20 border border-lime-500/30 px-2 py-0.5 text-[9px] font-bold text-lime-300 animate-pulse">
+                        <Monitor className="h-2.5 w-2.5" />
+                        <span>Presenting</span>
+                      </span>
+                    )}
+
+                    {/* Host action: Force stop screen share if presenting */}
+                    {isHost && !p.isLocal && p.isScreenSharing && (
+                      <button
+                        onClick={() =>
+                          p.socketId &&
+                          onStopParticipantScreenShare &&
+                          onStopParticipantScreenShare(p.socketId)
+                        }
+                        className="rounded-lg bg-red-950/80 border border-red-700/60 hover:bg-red-900 px-2 py-1 text-[10px] font-bold text-red-200 hover:text-white transition-colors cursor-pointer"
+                        title="Stop this participant's screen share"
+                      >
+                        Stop
+                      </button>
+                    )}
+
+                    {/* Host action: Grant / Revoke Screen Share Permission */}
+                    {isHost && !p.isLocal && p.role !== "host" && (
+                      <button
+                        onClick={() =>
+                          onSetParticipantScreenShare &&
+                          onSetParticipantScreenShare(
+                            p.socketId || p.id,
+                            p.id,
+                            !p.canShareScreen
+                          )
+                        }
+                        className={`flex h-7 px-2 items-center gap-1 rounded-xl border text-[10px] font-semibold transition-all cursor-pointer ${
+                          p.canShareScreen
+                            ? "bg-lime-950/70 border-lime-700/60 text-lime-300 hover:bg-lime-900/60"
+                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850 hover:text-white"
+                        }`}
+                        title={
+                          p.canShareScreen
+                            ? "Click to revoke screen share permission"
+                            : "Click to grant screen share permission"
+                        }
+                      >
+                        {p.canShareScreen ? (
+                          <>
+                            <MonitorUp className="h-3 w-3 text-lime-400" />
+                            <span className="hidden sm:inline">Allowed</span>
+                          </>
+                        ) : (
+                          <>
+                            <MonitorOff className="h-3 w-3 text-zinc-500" />
+                            <span className="hidden sm:inline">Allow</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
                     <div
                       className={`flex h-7 w-7 items-center justify-center rounded-xl border transition-colors ${
                         p.isMuted
