@@ -219,21 +219,21 @@ const MeetingRoom = () => {
     isHost,
   });
 
-  // ─── Smooth entering transition after host admits guest ───
+  // ─── Fast & smooth entering transition after host admits guest ───
   useEffect(() => {
     if (admissionStatus !== "connecting") return;
 
     const startTime = Date.now();
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      if (elapsed >= 1400) {
+      if (elapsed >= 250) {
         setAdmissionStatus("admitted");
         toast.success("Joined meeting room!", {
           iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
         });
         clearInterval(interval);
       }
-    }, 200);
+    }, 50);
 
     return () => clearInterval(interval);
   }, [admissionStatus]);
@@ -393,6 +393,22 @@ const MeetingRoom = () => {
     socket.on("meeting-ended-by-host", handleMeetingEnded);
 
     if (isHost) {
+      // 1. Instantly register host on socket connect (no waiting for media/camera)
+      const registerHost = () => {
+        socket.emit("request-join", {
+          roomId: cleanRoomId,
+          userId: currentUserId,
+          userName: currentUserName,
+          avatarUrl: currentUserAvatar,
+          isHost: true,
+        });
+      };
+
+      if (socket.connected) {
+        registerHost();
+      }
+      socket.on("connect", registerHost);
+
       // Host listens for admission requests from incoming guests
       const handleJoinRequestReceived = (request: {
         requesterSocketId: string;
@@ -408,13 +424,21 @@ const MeetingRoom = () => {
         };
 
         setJoinRequests((prev) => {
-          // Replace or deduplicate requests from the same user/socket
+          // If request is already displayed, preserve its initial countdown timer
+          const existing = prev.find(
+            (r) =>
+              r.requesterSocketId === request.requesterSocketId ||
+              (request.userId && r.userId === request.userId)
+          );
           const filtered = prev.filter(
             (r) =>
               r.requesterSocketId !== request.requesterSocketId &&
               (!request.userId || r.userId !== request.userId)
           );
-          return [...filtered, fullRequest];
+          return [
+            ...filtered,
+            existing ? { ...fullRequest, createdAt: existing.createdAt } : fullRequest,
+          ];
         });
       };
 
@@ -438,6 +462,7 @@ const MeetingRoom = () => {
       socket.on("join-request-received", handleJoinRequestReceived);
       socket.on("join-request-cancelled", handleJoinRequestCancelled);
       return () => {
+        socket.off("connect", registerHost);
         socket.off("meeting-ended-by-host", handleMeetingEnded);
         socket.off("join-request-received", handleJoinRequestReceived);
         socket.off("join-request-cancelled", handleJoinRequestCancelled);
@@ -445,6 +470,9 @@ const MeetingRoom = () => {
     } else {
       // Guest emits request to join
       const sendJoinRequest = () => {
+        if (!socket.connected) {
+          socket.connect();
+        }
         socket.emit("request-join", {
           roomId: cleanRoomId,
           userId: currentUserId,
@@ -454,15 +482,15 @@ const MeetingRoom = () => {
         });
       };
 
-      sendJoinRequest();
+      if (socket.connected) {
+        sendJoinRequest();
+      }
+      socket.on("connect", sendJoinRequest);
 
-      // If socket reconnects while waiting, automatically re-request admission
-      const handleSocketReconnect = () => {
-        if (admissionStatus === "waiting") {
-          sendJoinRequest();
-        }
-      };
-      socket.on("connect", handleSocketReconnect);
+      // Fast retry pulse (every 2s) while waiting to guarantee immediate delivery as soon as host is present
+      const knockInterval = setInterval(() => {
+        sendJoinRequest();
+      }, 2000);
 
       const handleJoinResponse = ({
         approved,
@@ -476,6 +504,7 @@ const MeetingRoom = () => {
         reason?: string;
       }) => {
         if (meetingClosed) {
+          clearInterval(knockInterval);
           setAdmissionStatus("closed");
           setClosedReason(reason || "Host closed the meeting");
           leaveMeeting();
@@ -483,14 +512,16 @@ const MeetingRoom = () => {
         }
 
         if (waitingForHost) {
-          // Keep guest in waiting room
+          // Keep guest in waiting room; knockInterval will deliver to host the moment host enters
           setAdmissionStatus("waiting");
           return;
         }
 
         if (approved) {
+          clearInterval(knockInterval);
           setAdmissionStatus("connecting");
         } else {
+          clearInterval(knockInterval);
           setAdmissionStatus("denied");
           toast.error(reason || "The host declined your request to join.");
         }
@@ -498,9 +529,10 @@ const MeetingRoom = () => {
 
       socket.on("join-response", handleJoinResponse);
       return () => {
+        clearInterval(knockInterval);
         socket.off("meeting-ended-by-host", handleMeetingEnded);
         socket.off("join-response", handleJoinResponse);
-        socket.off("connect", handleSocketReconnect);
+        socket.off("connect", sendJoinRequest);
       };
     }
   }, [
