@@ -2,40 +2,40 @@
 
 User-agent: *
 Allow: /
-Allow: /dashboard
 Allow: /pricing
-Allow: /payment
-Allow: /pay
 Allow: /join
+Allow: /payment
 Allow: /sessions
-Allow: /privacy
-Allow: /privacy-policy
-Allow: /terms
-Allow: /terms-of-service
 Allow: /login
 Allow: /signup
-Allow: /googled1a697e54b4ff7a7.html
+Allow: /privacy
+Allow: /terms
 
-# Prevent crawling of dynamic private meeting rooms to protect user privacy
+# Protect private encrypted video meeting rooms from crawler discovery
 Disallow: /meeting/*
+
+# Prevent crawler confusion by disallowing duplicate internal aliases
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
 
 User-agent: Googlebot
 Allow: /
-Allow: /dashboard
 Allow: /pricing
-Allow: /payment
-Allow: /pay
 Allow: /join
+Allow: /payment
 Allow: /sessions
-Allow: /privacy
-Allow: /privacy-policy
-Allow: /terms
-Allow: /terms-of-service
 Allow: /login
 Allow: /signup
-Allow: /googled1a697e54b4ff7a7.html
+Allow: /privacy
+Allow: /terms
 Disallow: /meeting/*
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
 
-# Host and Sitemap
+# Host and Sitemap Directives
 Host: https://viva-meeting-app.vercel.app
 Sitemap: https://viva-meeting-app.vercel.app/sitemap.xml

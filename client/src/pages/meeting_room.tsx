@@ -302,7 +302,7 @@ const MeetingRoom = () => {
 
   const handleReturnHome = useCallback(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate("/");
     } else {
       navigate("/join");
     }
@@ -649,7 +649,7 @@ const MeetingRoom = () => {
 
         {/* Top Header */}
         <header className="relative z-10 mx-auto flex w-full max-w-4xl items-center justify-between py-2">
-          <Link to="/dashboard" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2.5 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 border border-emerald-200/80 shadow-md shadow-lime-900/10 backdrop-blur-md">
               <BrandLogo className="h-6 w-6" color="#4d7c0f" />
             </div>

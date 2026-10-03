@@ -76,7 +76,7 @@ const MeetingHeader = ({
       {/* ─── Left Section: Logo & Meeting Title ─── */}
       <div className="flex items-center gap-4">
         <Link
-          to="/dashboard"
+          to="/"
           title="Back to Dashboard"
           className="flex items-center gap-2 group transition-transform hover:scale-105"
         >

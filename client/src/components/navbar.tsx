@@ -4,7 +4,7 @@ import { SignedIn, SignedOut, UserButton, SignInButton, useUser } from "@clerk/c
 import BrandLogo from "./brand_logo";
 
 const navLinks = [
-  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { name: "Dashboard", path: "/", icon: LayoutDashboard },
   { name: "Sessions", path: "/sessions", icon: Clock },
   { name: "Pricing", path: "/pricing", icon: CreditCard },
 ];
@@ -28,7 +28,7 @@ const Navbar = ({
         {/* Left: Brand Logo */}
         <div className="flex items-center gap-5">
           <Link
-            to="/dashboard"
+            to="/"
             className="flex items-center gap-2.5 transition-transform hover:scale-105 active:scale-95 group"
           >
             <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 shadow-xs group-hover:border-emerald-300 transition-colors">
@@ -42,7 +42,10 @@ const Navbar = ({
           {/* Desktop Nav Pills */}
           <nav className="hidden items-center gap-1 rounded-full bg-slate-100/80 p-1 border border-slate-200/60 md:flex">
             {navLinks.map((link) => {
-              const isActive = location.pathname === link.path;
+              const isActive =
+                link.path === "/"
+                  ? location.pathname === "/" || location.pathname === "/dashboard"
+                  : location.pathname === link.path;
               const Icon = link.icon;
               return (
                 <Link
@@ -93,7 +96,10 @@ const Navbar = ({
       {/* Mobile Navigation Dock */}
       <div className="mx-auto mt-2 flex max-w-sm items-center justify-around rounded-full border border-slate-200/80 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-md md:hidden pointer-events-auto">
         {navLinks.map((link) => {
-          const isActive = location.pathname === link.path;
+          const isActive =
+            link.path === "/"
+              ? location.pathname === "/" || location.pathname === "/dashboard"
+              : location.pathname === link.path;
           const Icon = link.icon;
           return (
             <Link

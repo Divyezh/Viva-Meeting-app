@@ -211,7 +211,7 @@ const PaymentPage = () => {
                 )}
                 <div className="pt-4">
                   <Link
-                    to="/dashboard"
+                    to="/"
                     className="inline-flex items-center justify-center rounded-xl bg-lime-600 hover:bg-lime-500 px-6 py-2.5 text-xs font-bold text-slate-950 shadow-md transition-all"
                   >
                     Return to Dashboard

@@ -3,92 +3,65 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <!-- Homepage -->
+  <!-- Primary Homepage -->
   <url>
     <loc>https://viva-meeting-app.vercel.app/</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.00</priority>
   </url>
-  <!-- Dashboard Page -->
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/dashboard</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.95</priority>
-  </url>
-  <!-- Pricing Page -->
+  <!-- Pricing & Subscription Plans -->
   <url>
     <loc>https://viva-meeting-app.vercel.app/pricing</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
-  <!-- Payment & UPI Upgrade Page -->
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/payment</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <!-- Direct Pay Route -->
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/pay</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
-  </url>
-  <!-- Guest Instant Meeting Join Page -->
+  <!-- Instant Guest Join Page -->
   <url>
     <loc>https://viva-meeting-app.vercel.app/join</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.90</priority>
+  </url>
+  <!-- Pro Upgrade & Payment Page -->
+  <url>
+    <loc>https://viva-meeting-app.vercel.app/payment</loc>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.85</priority>
   </url>
-  <!-- Meeting History & Sessions Page -->
+  <!-- Meeting History & Sessions -->
   <url>
     <loc>https://viva-meeting-app.vercel.app/sessions</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <!-- Privacy Policy (DPDP Act 2023) -->
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/privacy</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/privacy-policy</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
-  </url>
-  <!-- Terms of Service -->
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/terms</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.75</priority>
-  </url>
-  <url>
-    <loc>https://viva-meeting-app.vercel.app/terms-of-service</loc>
-    <lastmod>2026-09-30</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
+    <priority>0.80</priority>
   </url>
   <!-- Authentication Pages -->
   <url>
     <loc>https://viva-meeting-app.vercel.app/login</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
+    <priority>0.70</priority>
   </url>
   <url>
     <loc>https://viva-meeting-app.vercel.app/signup</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-03</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
+    <priority>0.70</priority>
+  </url>
+  <!-- Legal Pages (De-prioritized to prevent outranking product pages) -->
+  <url>
+    <loc>https://viva-meeting-app.vercel.app/privacy</loc>
+    <lastmod>2026-10-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
+  </url>
+  <url>
+    <loc>https://viva-meeting-app.vercel.app/terms</loc>
+    <lastmod>2026-10-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.50</priority>
   </url>
 </urlset>

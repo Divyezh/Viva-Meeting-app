@@ -144,7 +144,7 @@ const Sessions = () => {
         {/* Breadcrumb link */}
         <div className="mb-6 flex items-center justify-between">
           <Link
-            to="/dashboard"
+            to="/"
             className="group inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />

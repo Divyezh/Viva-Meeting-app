@@ -75,7 +75,7 @@ const PrivacyPolicy = () => {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <Link
-              to="/dashboard"
+              to="/"
               className="flex items-center gap-2 rounded-full bg-emerald-50/80 border border-emerald-200/60 px-3 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100/70 transition-all active:scale-95"
             >
               <ArrowLeft className="h-3.5 w-3.5" />

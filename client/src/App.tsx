@@ -25,17 +25,17 @@ function App() {
         <Route path="/signup/*" element={<SignUpPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy" element={<Navigate to="/privacy" replace />} />
         <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
 
         {/* Public App Layout with Navigation and Footer - Fully Indexable & Crawlable */}
         <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/payment" element={<PaymentPage />} />
-          <Route path="/pay" element={<PaymentPage />} />
+          <Route path="/pay" element={<Navigate to="/payment" replace />} />
           <Route path="/sessions" element={<Sessions />} />
         </Route>
 

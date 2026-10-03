@@ -23,9 +23,9 @@ const Dashboard = () => {
   }, []);
 
   usePageSEO({
-    title: "Viva Meeting - High Quality Instant Video Calls & Conferencing",
+    title: "Viva Meeting - Free HD Video Calling & Instant Online Conferencing",
     description:
-      "Start instant encrypted video meetings, create secure room codes, share screens, and join HD conferences on Viva Meeting with zero downloads.",
+      "Host and join instant HD video meetings with Viva Meeting. Crystal-clear video, screen sharing, waiting room security, and live Hindi-to-English translation. Zero downloads required.",
     canonicalPath: "/",
   });
 

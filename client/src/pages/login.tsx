@@ -9,7 +9,7 @@ const Login = () => {
 
   // If already signed in, redirect straight to dashboard
   if (isSignedIn) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   usePageSEO({
@@ -68,8 +68,8 @@ const Login = () => {
             path="/login"
             routing="path"
             signUpUrl="/signup"
-            fallbackRedirectUrl="/dashboard"
-            forceRedirectUrl="/dashboard"
+            fallbackRedirectUrl="/"
+            forceRedirectUrl="/"
           />
         </div>
 

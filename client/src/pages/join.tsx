@@ -156,7 +156,7 @@ const JoinPage = () => {
 
       {/* Top Navbar Header */}
       <header className="relative z-10 mx-auto flex w-full max-w-4xl items-center justify-between py-2">
-        <Link to="/dashboard" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-2.5 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 border border-emerald-200/80 shadow-md shadow-lime-900/10 backdrop-blur-md">
             <BrandLogo className="h-6 w-6" color="#4d7c0f" />
           </div>
@@ -167,7 +167,7 @@ const JoinPage = () => {
 
         {isSignedIn ? (
           <Link
-            to="/dashboard"
+            to="/"
             className="flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-4 py-1.5 text-xs font-semibold text-[#3f6212] hover:bg-emerald-100 transition-colors"
           >
             Dashboard
