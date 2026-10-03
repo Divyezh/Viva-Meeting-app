@@ -1,3 +1,4 @@
+
 import { Howl, Howler } from "howler";
 
 // ─── Lightweight High-Clarity WAV Audio Synthesizer ──────────────
@@ -82,20 +83,20 @@ const leaveSoundUri = createWavDataUri(0.35, (t) => {
   return env * wave * 0.35;
 });
 
-// 3. Mic Live / Unmuted Crisp Chime
-const micOnUri = createWavDataUri(0.18, (t) => {
-  const env = Math.exp(-t * 14.0);
-  const freq = 880; // A5
-  const wave = Math.sin(2 * Math.PI * freq * t) + 0.3 * Math.sin(2 * Math.PI * 1760 * t);
-  return env * wave * 0.35;
+// 3. Mic Live / Unmuted Subtle Warm Click (Soft low-frequency tone to avoid acoustic feedback loops)
+const micOnUri = createWavDataUri(0.08, (t) => {
+  const env = Math.exp(-t * 35.0);
+  const freq = 420 - 120 * (t / 0.08); // Gentle 420Hz -> 300Hz downward blip
+  const wave = Math.sin(2 * Math.PI * freq * t);
+  return env * wave * 0.15;
 });
 
 // 4. Mic Muted Soft Cue
-const micOffUri = createWavDataUri(0.18, (t) => {
-  const env = Math.exp(-t * 16.0);
-  const freq = 440; // A4
+const micOffUri = createWavDataUri(0.08, (t) => {
+  const env = Math.exp(-t * 35.0);
+  const freq = 300 - 100 * (t / 0.08);
   const wave = Math.sin(2 * Math.PI * freq * t);
-  return env * wave * 0.3;
+  return env * wave * 0.15;
 });
 
 // 5. In-Meeting Chat Ping (Crystal glass chime)
@@ -133,8 +134,8 @@ const reactionPopUri = createWavDataUri(0.18, (t) => {
 const sounds = {
   join: new Howl({ src: [joinSoundUri], html5: false, volume: 0.6 }),
   leave: new Howl({ src: [leaveSoundUri], html5: false, volume: 0.5 }),
-  micOn: new Howl({ src: [micOnUri], html5: false, volume: 0.5 }),
-  micOff: new Howl({ src: [micOffUri], html5: false, volume: 0.5 }),
+  micOn: new Howl({ src: [micOnUri], html5: false, volume: 0.25 }),
+  micOff: new Howl({ src: [micOffUri], html5: false, volume: 0.25 }),
   chat: new Howl({ src: [chatPingUri], html5: false, volume: 0.55 }),
   speakerTest: new Howl({ src: [speakerTestUri], html5: false, volume: 0.75 }),
   reaction: new Howl({ src: [reactionPopUri], html5: false, volume: 0.5 }),

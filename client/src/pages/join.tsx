@@ -16,14 +16,7 @@ import toast, { Toaster } from "react-hot-toast";
 import BrandLogo from "../components/brand_logo";
 import usePageSEO from "../hooks/usePageSEO";
 import { useUser } from "@clerk/clerk-react";
-
-const extractRoomId = (input: string) => {
-  let cleaned = input.trim();
-  if (cleaned.includes("/meeting/")) {
-    cleaned = cleaned.split("/meeting/")[1].split("?")[0].split("#")[0];
-  }
-  return cleaned.replace(/[^a-zA-Z0-9_-]/g, "");
-};
+import { extractRoomId, prepareGuestJoin } from "../utils/meetingJoin";
 
 const JoinPage = () => {
   const { meetingId: urlMeetingId } = useParams<{ meetingId?: string }>();
@@ -48,6 +41,7 @@ const JoinPage = () => {
 
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -67,7 +61,11 @@ const JoinPage = () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 360 } },
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
         });
 
         if (isCancelled) {
@@ -77,7 +75,10 @@ const JoinPage = () => {
 
         setMediaStream(stream);
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.muted = true;
+          videoRef.current.defaultMuted = true;
+          videoRef.current.volume = 0;
+          videoRef.current.srcObject = new MediaStream(stream.getVideoTracks());
         }
 
         stream.getVideoTracks().forEach((t) => (t.enabled = !isCameraOff));
@@ -117,6 +118,7 @@ const JoinPage = () => {
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isJoining) return;
     const cleanId = extractRoomId(meetingCode);
 
     if (!cleanId || cleanId.length < 3) {
@@ -124,15 +126,14 @@ const JoinPage = () => {
       return;
     }
 
-    const trimmedName = userName.trim() || "Guest Participant";
+    setIsJoining(true);
 
-    // Save preferences for the meeting room
-    localStorage.setItem("meeting_user_name", trimmedName);
-    localStorage.setItem("prejoin_muted", isMicMuted ? "true" : "false");
-    localStorage.setItem("prejoin_camera_off", isCameraOff ? "true" : "false");
-    sessionStorage.setItem(`prejoin_confirmed_${cleanId}`, "true");
-    sessionStorage.removeItem(`is_host_${cleanId}`);
-    localStorage.removeItem(`is_host_${cleanId}`);
+    prepareGuestJoin({
+      roomId: cleanId,
+      userName,
+      muted: isMicMuted,
+      cameraOff: isCameraOff,
+    });
 
     // Stop local preview tracks before entering room
     if (mediaStream) {
@@ -143,7 +144,9 @@ const JoinPage = () => {
       iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
     });
 
-    navigate(`/meeting/${cleanId}`);
+    setTimeout(() => {
+      navigate(`/meeting/${cleanId}`);
+    }, 160);
   };
 
   return (
@@ -315,10 +318,20 @@ const JoinPage = () => {
                 {/* Join CTA Button */}
                 <button
                   type="submit"
-                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-[#3f6212] hover:bg-[#365314] py-3.5 text-sm font-bold text-white shadow-lg shadow-lime-900/20 active:scale-95 transition-all cursor-pointer"
+                  disabled={isJoining}
+                  className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-[#3f6212] hover:bg-[#365314] py-3.5 text-sm font-bold text-white shadow-lg shadow-lime-900/20 active:scale-95 transition-all cursor-pointer disabled:opacity-85 disabled:cursor-wait"
                 >
-                  <span>Join Meeting Now</span>
-                  <ArrowRight className="h-4 w-4" />
+                  {isJoining ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      <span>Connecting to Meeting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Join Meeting Now</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               </form>
 

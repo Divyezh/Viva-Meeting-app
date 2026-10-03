@@ -215,9 +215,194 @@
   animation: soundwave-3 0.9s ease-in-out infinite 0.3s;
 }
 
-/* ─── Smooth Transitions ─── */
+/* ─── Shared Animation Timing & Design Tokens ─── */
+:root {
+  --anim-duration-fast: 160ms;
+  --anim-duration-normal: 240ms;
+  --anim-duration-smooth: 320ms;
+  --anim-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --anim-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --anim-ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ─── GPU-Accelerated Keyframe Animations ─── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes scaleDown {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.97);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes tileIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes shimmerProgress {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ─── Animation Utility Classes ─── */
+.animate-fade-in {
+  animation: fadeIn var(--anim-duration-normal) var(--anim-ease-spring) forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--anim-duration-fast) var(--anim-ease-out) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp var(--anim-duration-normal) var(--anim-ease-spring) forwards;
+}
+
+.animate-scale-down {
+  animation: scaleDown var(--anim-duration-fast) var(--anim-ease-out) forwards;
+}
+
+.animate-slide-down {
+  animation: slideDownFade var(--anim-duration-normal) var(--anim-ease-spring) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUpFade var(--anim-duration-fast) var(--anim-ease-out) forwards;
+}
+
+.animate-tile-in {
+  animation: tileIn var(--anim-duration-normal) var(--anim-ease-spring) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+.animate-shimmer-progress {
+  background: linear-gradient(90deg, #10b981 0%, #a3e635 50%, #10b981 100%);
+  background-size: 200% 100%;
+  animation: shimmerProgress 2s linear infinite;
+}
+
+/* ─── Smooth Micro-Interactions & Transitions ─── */
 button,
 a,
-input {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+input,
+select,
+textarea {
+  transition:
+    background-color var(--anim-duration-fast) var(--anim-ease-smooth),
+    border-color var(--anim-duration-fast) var(--anim-ease-smooth),
+    color var(--anim-duration-fast) var(--anim-ease-smooth),
+    box-shadow var(--anim-duration-fast) var(--anim-ease-smooth),
+    opacity var(--anim-duration-fast) var(--anim-ease-smooth),
+    transform var(--anim-duration-fast) var(--anim-ease-spring);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Custom Smooth Toast Transitions ─── */
+.smooth-toast {
+  transition: all var(--anim-duration-normal) var(--anim-ease-spring) !important;
+}
+
+[role="status"] {
+  animation: slideDownFade var(--anim-duration-normal) var(--anim-ease-spring) forwards !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }

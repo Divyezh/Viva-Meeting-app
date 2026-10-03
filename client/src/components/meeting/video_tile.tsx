@@ -45,13 +45,23 @@ const VideoTile = ({
     if (videoEl.srcObject !== stream) {
       videoEl.srcObject = stream;
     }
+    videoEl.muted = true;
+    videoEl.volume = 0;
     videoEl.play().catch(() => {});
 
+    console.log(
+      `[DOM Video Attach] Tile "${userName}" (isLocal: ${isLocal}) attached stream ${stream.id} [MUTED: true, volume: 0]`
+    );
+
     const handleTrackChange = () => {
-      if (videoEl && videoEl.srcObject !== stream) {
-        videoEl.srcObject = stream;
+      if (videoEl) {
+        videoEl.muted = true;
+        videoEl.volume = 0;
+        if (videoEl.srcObject !== stream) {
+          videoEl.srcObject = stream;
+        }
+        videoEl.play().catch(() => {});
       }
-      videoEl?.play().catch(() => {});
     };
 
     stream.addEventListener("addtrack", handleTrackChange);
@@ -70,12 +80,19 @@ const VideoTile = ({
         videoEl.srcObject = null;
       }
     };
-  }, [stream]);
+  }, [stream, isLocal, userName]);
 
   // Ensure remote participant voice plays reliably through dedicated audio element ONLY
+  // Local audio is NEVER played back to prevent acoustic feedback loops.
   useEffect(() => {
     const audioEl = audioRef.current;
-    if (!audioEl || isLocal) return;
+    if (!audioEl || isLocal) {
+      if (audioEl) {
+        audioEl.srcObject = null;
+        audioEl.muted = true;
+      }
+      return;
+    }
 
     if (!stream) {
       audioEl.srcObject = null;
@@ -92,6 +109,10 @@ const VideoTile = ({
     audioEl.play().catch((err) => {
       console.debug("Remote audio play notice:", err);
     });
+
+    console.log(
+      `[DOM Audio Attach] Playing remote audio for "${userName}" (stream: ${stream.id}, tracks: ${stream.getAudioTracks().length})`
+    );
 
     const handleAudioTrack = () => {
       if (audioEl && audioEl.srcObject !== stream) {
@@ -121,9 +142,10 @@ const VideoTile = ({
       window.removeEventListener("click", handleUnlock);
       if (audioEl) {
         audioEl.srcObject = null;
+        audioEl.muted = true;
       }
     };
-  }, [stream, isLocal]);
+  }, [stream, isLocal, userName]);
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -141,7 +163,7 @@ const VideoTile = ({
 
   return (
     <div
-      className={`group relative flex h-full w-full items-center justify-center overflow-hidden rounded-3xl bg-[#0b180e] border border-emerald-900/30 shadow-lg ${
+      className={`group relative flex h-full w-full items-center justify-center overflow-hidden rounded-3xl bg-[#0b180e] border border-emerald-900/30 shadow-lg transition-all duration-200 ease-out ${
         isSpeaking
           ? "ring-2 ring-[#8be00d] shadow-xl shadow-lime-500/20"
           : "hover:border-emerald-700/50"
@@ -164,7 +186,7 @@ const VideoTile = ({
         autoPlay
         playsInline
         muted={true}
-        className={`h-full w-full ${
+        className={`h-full w-full transition-opacity duration-250 ease-out ${
           isScreenSharing ? "object-contain bg-black" : "object-cover"
         } ${showVideo ? "opacity-100" : "opacity-0 absolute"} ${
           isLocal && !isScreenSharing ? "scale-x-[-1]" : ""
@@ -173,7 +195,7 @@ const VideoTile = ({
 
       {/* ─── Camera Off Fallback: Modern Ambient Gradient + Initials Badge ─── */}
       {!showVideo && (
-        <div className="relative flex h-full w-full items-center justify-center bg-linear-to-br from-[#122415] via-[#0b180e] to-[#070e08] overflow-hidden">
+        <div className="relative flex h-full w-full items-center justify-center bg-linear-to-br from-[#122415] via-[#0b180e] to-[#070e08] overflow-hidden transition-opacity duration-250 ease-out">
           {/* Subtle luminous background aura */}
           <div className="pointer-events-none absolute h-48 w-48 rounded-full bg-emerald-500/10 blur-2xl" />
 

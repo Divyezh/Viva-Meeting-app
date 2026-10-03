@@ -53,6 +53,7 @@ const NewMeetingModal = ({
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
 
   if (!isOpen) return null;
 
@@ -89,6 +90,8 @@ const NewMeetingModal = ({
 
   const handleStartMeeting = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLaunching) return;
+
     if (!userName.trim()) {
       toast.error("Please enter your name");
       return;
@@ -97,6 +100,8 @@ const NewMeetingModal = ({
       toast.error("Please enter a meeting code");
       return;
     }
+
+    setIsLaunching(true);
 
     const cleanId = meetingId.trim();
     localStorage.setItem("meeting_user_name", userName.trim());
@@ -124,8 +129,10 @@ const NewMeetingModal = ({
       iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
     });
 
-    onClose();
-    navigate(`/meeting/${cleanId}?host=true`);
+    setTimeout(() => {
+      onClose();
+      navigate(`/meeting/${cleanId}?host=true`);
+    }, 160);
   };
 
   return (
@@ -310,10 +317,20 @@ const NewMeetingModal = ({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-full bg-[#3f6212] px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-lime-900/20 hover:bg-[#365314] active:scale-95 transition-all"
+              disabled={isLaunching}
+              className="flex items-center gap-2 rounded-full bg-[#3f6212] px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-lime-900/20 hover:bg-[#365314] active:scale-95 transition-all cursor-pointer disabled:opacity-85 disabled:cursor-wait"
             >
-              Start Meeting
-              <ArrowRight className="h-4 w-4" />
+              {isLaunching ? (
+                <>
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <span>Launching Meeting...</span>
+                </>
+              ) : (
+                <>
+                  <span>Start Meeting</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </div>
         </form>

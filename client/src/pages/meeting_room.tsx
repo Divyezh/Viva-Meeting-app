@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -33,6 +33,8 @@ import soundEffects from "../utils/soundEffects";
 import { useUser } from "@clerk/clerk-react";
 import usePageSEO from "../hooks/usePageSEO";
 import BrandLogo from "../components/brand_logo";
+import { prepareGuestJoin } from "../utils/meetingJoin";
+import ConnectingScreen from "../components/meeting/connecting_screen";
 
 interface JoinRequest {
   requesterSocketId: string;
@@ -48,7 +50,7 @@ const MeetingRoom = () => {
   const cleanRoomId = roomId || "default-room";
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, isLoaded: isUserLoaded } = useUser();
 
   usePageSEO({
     title: `Live Meeting (${cleanRoomId}) | Viva Meeting`,
@@ -111,7 +113,11 @@ const MeetingRoom = () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 360 } },
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
@@ -119,7 +125,11 @@ const MeetingRoom = () => {
         }
         setLobbyStream(stream);
         if (lobbyVideoRef.current) {
-          lobbyVideoRef.current.srcObject = stream;
+          lobbyVideoRef.current.muted = true;
+          lobbyVideoRef.current.defaultMuted = true;
+          lobbyVideoRef.current.volume = 0;
+          // Attach only video tracks to the preview element to physically guarantee zero audio playback
+          lobbyVideoRef.current.srcObject = new MediaStream(stream.getVideoTracks());
         }
         stream.getAudioTracks().forEach((t) => (t.enabled = !lobbyMicMuted));
         stream.getVideoTracks().forEach((t) => (t.enabled = !lobbyCameraOff));
@@ -195,6 +205,10 @@ const MeetingRoom = () => {
     allScreenShareAllowed,
     screenShareRequests,
     isLocalSpeaking,
+    connectionPhase,
+    isWaitingForPermissions,
+    isInitializing,
+    isReady,
     toggleMute,
     toggleCamera,
     toggleScreenShare,
@@ -215,9 +229,46 @@ const MeetingRoom = () => {
     },
     initialMuted,
     initialCameraOff,
-    enabled: !inLobby && (admissionStatus === "admitted" || admissionStatus === "connecting"),
+    // Only start media/signaling once Clerk has resolved, so the userId never flips mid-session
+    enabled:
+      isUserLoaded &&
+      !inLobby &&
+      (admissionStatus === "admitted" || admissionStatus === "connecting"),
     isHost,
   });
+
+  // ─── Smooth Connecting Overlay Transition State ──────────────
+  const [showConnectingTransition, setShowConnectingTransition] = useState(true);
+  const [isTransitionExiting, setIsTransitionExiting] = useState(false);
+  const [exitingRequestIds, setExitingRequestIds] = useState<
+    Record<string, "admitted" | "denied" | "expired">
+  >({});
+
+  // Trigger smooth handoff into meeting room once ready or media active
+  useEffect(() => {
+    if (!showConnectingTransition || isTransitionExiting) return;
+    if (isReady || localStream) {
+      setIsTransitionExiting(true);
+      const timer = setTimeout(() => {
+        setShowConnectingTransition(false);
+        setIsTransitionExiting(false);
+      }, 320);
+      return () => clearTimeout(timer);
+    }
+  }, [isReady, localStream, showConnectingTransition, isTransitionExiting]);
+
+  // Safety fallback: ensure screen never hangs indefinitely
+  useEffect(() => {
+    if (!showConnectingTransition || isTransitionExiting) return;
+    const safetyTimer = setTimeout(() => {
+      setIsTransitionExiting(true);
+      setTimeout(() => {
+        setShowConnectingTransition(false);
+        setIsTransitionExiting(false);
+      }, 320);
+    }, 4000);
+    return () => clearTimeout(safetyTimer);
+  }, [showConnectingTransition, isTransitionExiting]);
 
   // ─── Fast & smooth entering transition after host admits guest ───
   useEffect(() => {
@@ -311,10 +362,12 @@ const MeetingRoom = () => {
   const handleLobbyJoin = (e: React.FormEvent) => {
     e.preventDefault();
     const finalName = lobbyName.trim() || (user?.fullName || user?.firstName || "Guest");
-    localStorage.setItem("meeting_user_name", finalName);
-    localStorage.setItem("prejoin_muted", lobbyMicMuted ? "true" : "false");
-    localStorage.setItem("prejoin_camera_off", lobbyCameraOff ? "true" : "false");
-    sessionStorage.setItem(`prejoin_confirmed_${cleanRoomId}`, "true");
+    prepareGuestJoin({
+      roomId: cleanRoomId,
+      userName: finalName,
+      muted: lobbyMicMuted,
+      cameraOff: lobbyCameraOff,
+    });
 
     if (lobbyStream) {
       lobbyStream.getTracks().forEach((t) => t.stop());
@@ -323,21 +376,34 @@ const MeetingRoom = () => {
     setInLobby(false);
   };
 
-  // Host Action: Admit Guest
+  // Host Action: Admit Guest with smooth exit animation
   const handleAdmitUser = useCallback(
     (requesterSocketId: string, guestName: string) => {
+      console.log(`[Admission] Host clicked ADMIT for ${guestName} (${requesterSocketId})`);
+      // Immediately emit approval to server so attendee is unblocked with zero latency
       socket.emit("approve-join-request", {
         requesterSocketId,
         approved: true,
         roomId: cleanRoomId,
       });
-      setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
+
+      // Mark as exiting to trigger smooth slide-up + fade-out CSS exit animation
+      setExitingRequestIds((prev) => ({ ...prev, [requesterSocketId]: "admitted" }));
       toast.success(`Admitted ${guestName} to the meeting`);
+
+      setTimeout(() => {
+        setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
+        setExitingRequestIds((prev) => {
+          const next = { ...prev };
+          delete next[requesterSocketId];
+          return next;
+        });
+      }, 240);
     },
     [cleanRoomId]
   );
 
-  // Host Action: Deny Guest
+  // Host Action: Deny Guest with smooth exit animation
   const handleDenyUser = useCallback(
     (requesterSocketId: string, guestName: string) => {
       socket.emit("approve-join-request", {
@@ -345,8 +411,19 @@ const MeetingRoom = () => {
         approved: false,
         roomId: cleanRoomId,
       });
-      setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
+
+      // Mark as exiting to trigger smooth slide-up + fade-out CSS exit animation
+      setExitingRequestIds((prev) => ({ ...prev, [requesterSocketId]: "denied" }));
       toast(`${guestName}'s request was declined`);
+
+      setTimeout(() => {
+        setJoinRequests((prev) => prev.filter((r) => r.requesterSocketId !== requesterSocketId));
+        setExitingRequestIds((prev) => {
+          const next = { ...prev };
+          delete next[requesterSocketId];
+          return next;
+        });
+      }, 240);
     },
     [cleanRoomId]
   );
@@ -358,30 +435,62 @@ const MeetingRoom = () => {
 
     const timer = setInterval(() => {
       const now = Date.now();
-      // Remove any requests that reach 60 seconds (ample time for host to decide)
-      setJoinRequests((prev) => {
-        const remaining = prev.filter((r) => now - r.createdAt < 60000);
-        return remaining.length !== prev.length ? remaining : prev;
-      });
+      // Requests that reach 60s are smoothly declined so the guest isn't left waiting forever
+      const expired = joinRequestsRef.current.filter((r) => now - r.createdAt >= 60000);
+      if (expired.length > 0) {
+        expired.forEach((r) => {
+          console.log(`[Admission] Join request from ${r.userName} timed out`);
+          socket.emit("approve-join-request", {
+            requesterSocketId: r.requesterSocketId,
+            approved: false,
+            roomId: cleanRoomId,
+            reason: "No one responded to your request to join.",
+          });
+          setExitingRequestIds((prev) => ({ ...prev, [r.requesterSocketId]: "expired" }));
+        });
+        setTimeout(() => {
+          setJoinRequests((prev) => prev.filter((r) => now - r.createdAt < 60000));
+          setExitingRequestIds((prev) => {
+            const next = { ...prev };
+            expired.forEach((r) => delete next[r.requesterSocketId]);
+            return next;
+          });
+        }, 240);
+      }
       // Re-render each second to update the smooth countdown bar and seconds display
       setTimerTick((t) => t + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isHost, joinRequests.length]);
+  }, [isHost, joinRequests.length, cleanRoomId]);
+
+  // Refs so the admission effect below can read the latest values without re-running
+  // (re-running it is what used to re-emit "request-join" after the guest was admitted).
+  const admissionStatusRef = useRef(admissionStatus);
+  const identityRef = useRef({ currentUserId, currentUserName, currentUserAvatar });
+  const leaveMeetingRef = useRef(leaveMeeting);
+  const joinRequestsRef = useRef(joinRequests);
+  useLayoutEffect(() => {
+    admissionStatusRef.current = admissionStatus;
+    identityRef.current = { currentUserId, currentUserName, currentUserAvatar };
+    leaveMeetingRef.current = leaveMeeting;
+    joinRequestsRef.current = joinRequests;
+  });
 
   // ─── Socket Signaling for Admission & Knock Flow ────────────
+  // Runs once per (room, role) after the lobby and Clerk are ready. A guest sends exactly ONE
+  // "request-join" per socket connection; the server keeps it queued and forwards it to the host
+  // whenever the host (re)connects, so no client-side retry loop is needed.
   useEffect(() => {
-    if (inLobby) return; // Wait until guest enters display name and clicks Join
+    if (inLobby || !isUserLoaded) return;
 
     if (!socket.connected) {
       socket.connect();
     }
 
-    // Listen for host closing the meeting (applies only to guests; host controls the meeting lifecycle)
     const handleMeetingEnded = (data?: { reason?: string }) => {
       if (isHost) return;
-      leaveMeeting();
+      leaveMeetingRef.current();
       setAdmissionStatus("closed");
       if (data?.reason) {
         setClosedReason(data.reason);
@@ -393,43 +502,42 @@ const MeetingRoom = () => {
     socket.on("meeting-ended-by-host", handleMeetingEnded);
 
     if (isHost) {
-      // 1. Instantly register host on socket connect (no waiting for media/camera)
       const registerHost = () => {
+        const { currentUserId: uid, currentUserName: name, currentUserAvatar: avatar } =
+          identityRef.current;
+        console.log(`[Admission] Host registering for room ${cleanRoomId} (socket ${socket.id})`);
         socket.emit("request-join", {
           roomId: cleanRoomId,
-          userId: currentUserId,
-          userName: currentUserName,
-          avatarUrl: currentUserAvatar,
+          userId: uid,
+          userName: name,
+          avatarUrl: avatar,
           isHost: true,
         });
       };
 
-      if (socket.connected) {
-        registerHost();
-      }
+      if (socket.connected) registerHost();
       socket.on("connect", registerHost);
 
-      // Host listens for admission requests from incoming guests
-      const handleJoinRequestReceived = (request: {
-        requesterSocketId: string;
-        userId: string;
-        userName: string;
-        avatarUrl?: string;
-        roomId: string;
-      }) => {
-        soundEffects.playJoin(); // Play clear audio cue to alert the host!
-        const fullRequest: JoinRequest = {
-          ...request,
-          createdAt: Date.now(),
-        };
+      const handleJoinRequestReceived = (request: Omit<JoinRequest, "createdAt">) => {
+        console.log(
+          `[Admission] Host received join request from ${request.userName} (${request.requesterSocketId})`
+        );
+        const alreadyShown = joinRequestsRef.current.some(
+          (r) =>
+            r.requesterSocketId === request.requesterSocketId ||
+            (request.userId && r.userId === request.userId)
+        );
+        if (!alreadyShown) soundEffects.playJoin();
 
         setJoinRequests((prev) => {
-          // If request is already displayed, preserve its initial countdown timer
           const existing = prev.find(
             (r) =>
               r.requesterSocketId === request.requesterSocketId ||
               (request.userId && r.userId === request.userId)
           );
+          if (existing && existing.requesterSocketId === request.requesterSocketId) {
+            return prev; // Exact duplicate: keep UI stable
+          }
           const filtered = prev.filter(
             (r) =>
               r.requesterSocketId !== request.requesterSocketId &&
@@ -437,12 +545,11 @@ const MeetingRoom = () => {
           );
           return [
             ...filtered,
-            existing ? { ...fullRequest, createdAt: existing.createdAt } : fullRequest,
+            { ...request, createdAt: existing ? existing.createdAt : Date.now() },
           ];
         });
       };
 
-      // Listen for guest cancelling or disconnecting while waiting
       const handleJoinRequestCancelled = ({
         requesterSocketId,
         userId,
@@ -450,6 +557,7 @@ const MeetingRoom = () => {
         requesterSocketId: string;
         userId: string;
       }) => {
+        console.log(`[Admission] Join request cancelled (${requesterSocketId})`);
         setJoinRequests((prev) =>
           prev.filter(
             (r) =>
@@ -467,86 +575,79 @@ const MeetingRoom = () => {
         socket.off("join-request-received", handleJoinRequestReceived);
         socket.off("join-request-cancelled", handleJoinRequestCancelled);
       };
-    } else {
-      // Guest emits request to join
-      const sendJoinRequest = () => {
-        if (!socket.connected) {
-          socket.connect();
-        }
-        socket.emit("request-join", {
-          roomId: cleanRoomId,
-          userId: currentUserId,
-          userName: currentUserName,
-          avatarUrl: currentUserAvatar,
-          isHost: false,
-        });
-      };
+    }
 
-      if (socket.connected) {
-        sendJoinRequest();
-      }
-      socket.on("connect", sendJoinRequest);
+    // ── Guest ──
+    const sendJoinRequest = () => {
+      // Once admitted, never knock again (a reconnect re-joins via useWebRTC instead)
+      if (admissionStatusRef.current !== "waiting") return;
+      const { currentUserId: uid, currentUserName: name, currentUserAvatar: avatar } =
+        identityRef.current;
+      console.log(`[Admission] Guest emitting request-join for ${cleanRoomId} (socket ${socket.id})`);
+      socket.emit("request-join", {
+        roomId: cleanRoomId,
+        userId: uid,
+        userName: name,
+        avatarUrl: avatar,
+        isHost: false,
+      });
+    };
 
-      // Fast retry pulse (every 2s) while waiting to guarantee immediate delivery as soon as host is present
-      const knockInterval = setInterval(() => {
-        sendJoinRequest();
-      }, 2000);
+    // Emit now if connected, and once per (re)connection — each reconnect has a new socket.id
+    if (socket.connected) sendJoinRequest();
+    socket.on("connect", sendJoinRequest);
 
-      const handleJoinResponse = ({
+    const handleJoinResponse = ({
+      approved,
+      meetingClosed,
+      waitingForHost,
+      reason,
+    }: {
+      approved: boolean;
+      meetingClosed?: boolean;
+      waitingForHost?: boolean;
+      reason?: string;
+    }) => {
+      console.log("[Admission] Guest received join-response:", {
         approved,
         meetingClosed,
         waitingForHost,
         reason,
-      }: {
-        approved: boolean;
-        meetingClosed?: boolean;
-        waitingForHost?: boolean;
-        reason?: string;
-      }) => {
-        if (meetingClosed) {
-          clearInterval(knockInterval);
-          setAdmissionStatus("closed");
-          setClosedReason(reason || "Host closed the meeting");
-          leaveMeeting();
-          return;
-        }
+      });
 
-        if (waitingForHost) {
-          // Keep guest in waiting room; knockInterval will deliver to host the moment host enters
-          setAdmissionStatus("waiting");
-          return;
-        }
+      if (meetingClosed) {
+        setAdmissionStatus("closed");
+        setClosedReason(reason || "Host closed the meeting");
+        leaveMeetingRef.current();
+        return;
+      }
 
-        if (approved) {
-          clearInterval(knockInterval);
-          setAdmissionStatus("connecting");
-        } else {
-          clearInterval(knockInterval);
-          setAdmissionStatus("denied");
-          toast.error(reason || "The host declined your request to join.");
-        }
-      };
+      // Ignore stale responses once we've moved past the waiting room
+      if (admissionStatusRef.current !== "waiting") return;
 
-      socket.on("join-response", handleJoinResponse);
-      return () => {
-        clearInterval(knockInterval);
-        socket.off("meeting-ended-by-host", handleMeetingEnded);
-        socket.off("join-response", handleJoinResponse);
-        socket.off("connect", sendJoinRequest);
-      };
-    }
-  }, [
-    cleanRoomId,
-    currentUserId,
-    currentUserName,
-    currentUserAvatar,
-    handleAdmitUser,
-    handleDenyUser,
-    isHost,
-    leaveMeeting,
-    admissionStatus,
-    inLobby,
-  ]);
+      if (waitingForHost) return; // Server keeps our request queued for the host
+
+      if (approved) {
+        admissionStatusRef.current = "connecting";
+        setAdmissionStatus("connecting");
+      } else {
+        admissionStatusRef.current = "denied";
+        setAdmissionStatus("denied");
+        toast.error(reason || "The host declined your request to join.");
+      }
+    };
+
+    socket.on("join-response", handleJoinResponse);
+    return () => {
+      socket.off("meeting-ended-by-host", handleMeetingEnded);
+      socket.off("join-response", handleJoinResponse);
+      socket.off("connect", sendJoinRequest);
+      // Guest left the waiting room (navigated away): withdraw the pending knock on the server
+      if (admissionStatusRef.current === "waiting") {
+        socket.emit("leave-room");
+      }
+    };
+  }, [cleanRoomId, isHost, inLobby, isUserLoaded]);
 
   // Dynamic participants list formed by local user + all connected peers (strictly deduplicated)
   const participantsList: ParticipantItem[] = useMemo(() => {
@@ -895,40 +996,12 @@ const MeetingRoom = () => {
   // ─── 1.5. CONNECTING / ENTERING LOADING VIEW (AFTER HOST ADMISSION) ─
   if (admissionStatus === "connecting") {
     return (
-      <div className="bg-app-gradient relative flex min-h-screen w-screen items-center justify-center p-4 overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
-        <Toaster position="top-center" />
-
-        {/* Ambient atmospheric glows */}
-        <div className="pointer-events-none absolute -top-40 left-1/3 h-137.5 w-137.5 rounded-full bg-emerald-500/15 blur-3xl opacity-80" />
-        <div className="pointer-events-none absolute -bottom-40 right-1/4 h-137.5 w-137.5 rounded-full bg-[#84cc16]/15 blur-3xl opacity-80" />
-
-        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#081307]/92 border border-emerald-800/50 p-8 text-center shadow-2xl backdrop-blur-2xl">
-          {/* Animated Spinner with Brand Logo */}
-          <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-3 border-emerald-800/40 border-t-lime-400 animate-spin" />
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-950/80 border border-emerald-700/50 text-lime-400 shadow-lg">
-              <BrandLogo className="h-8 w-8" color="#a3e635" />
-            </div>
-          </div>
-
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 border border-emerald-700/50 px-3 py-1 text-[11px] font-semibold text-lime-300">
-            <span className="h-2 w-2 rounded-full bg-lime-400 animate-ping" />
-            <span>Host Admitted You</span>
-          </div>
-
-          <h2 className="text-2xl font-bold tracking-tight text-white mt-3">
-            Entering meeting...
-          </h2>
-          <p className="mt-2 text-xs leading-relaxed text-emerald-200/70">
-            Connecting audio, video, and syncing room state. You'll be in the meeting in a moment.
-          </p>
-
-          {/* Smooth animated progress bar */}
-          <div className="mt-6 w-full rounded-full bg-emerald-950/60 p-0.5 border border-emerald-800/40 overflow-hidden">
-            <div className="h-1.5 w-full rounded-full bg-linear-to-r from-emerald-500 via-lime-400 to-emerald-400 animate-pulse" />
-          </div>
-        </div>
-      </div>
+      <ConnectingScreen
+        roomId={cleanRoomId}
+        userName={currentUserName}
+        isWaitingForPermissions={isWaitingForPermissions}
+        connectionPhase={connectionPhase}
+      />
     );
   }
 
@@ -1010,10 +1083,23 @@ const MeetingRoom = () => {
     <div className="relative h-dvh w-screen overflow-hidden bg-[#08120a] flex flex-col selection:bg-emerald-900 selection:text-emerald-100">
       <Toaster position="top-center" />
 
+      {/* ─── Seamless Connecting & Media Permission Overlay ─── */}
+      {showConnectingTransition && (
+        <ConnectingScreen
+          roomId={cleanRoomId}
+          userName={currentUserName}
+          isWaitingForPermissions={isWaitingForPermissions}
+          connectionPhase={connectionPhase}
+          isExiting={isTransitionExiting}
+        />
+      )}
+
       {/* ─── Host Admission Bar: Appears when guests are knocking (60s timer with Decline button) ─── */}
       {isHost && joinRequests.length > 0 && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2.5 w-full max-w-lg px-4 animate-scale-up">
+        <div className="fixed top-16 sm:top-20 left-1/2 -translate-x-1/2 z-40 flex flex-col gap-2.5 w-full max-w-lg px-3 sm:px-4 pointer-events-auto">
           {joinRequests.map((req) => {
+            const isExiting = !!exitingRequestIds[req.requesterSocketId];
+            const exitType = exitingRequestIds[req.requesterSocketId];
             const elapsed = Date.now() - req.createdAt;
             const remainingSec = Math.max(1, Math.ceil((60000 - elapsed) / 1000));
             const progressPercent = Math.max(0, Math.min(100, (remainingSec / 60) * 100));
@@ -1021,55 +1107,69 @@ const MeetingRoom = () => {
             return (
               <div
                 key={req.requesterSocketId}
-                className="relative overflow-hidden rounded-2xl bg-[#08170c]/98 border border-emerald-500/40 p-3.5 text-white shadow-2xl backdrop-blur-2xl ring-1 ring-lime-400/25"
+                className={`transition-all duration-240 ease-out ${
+                  isExiting
+                    ? "opacity-0 -translate-y-3 scale-95 pointer-events-none max-h-0 py-0 my-0 overflow-hidden"
+                    : "opacity-100 translate-y-0 scale-100 animate-slide-down"
+                }`}
               >
-                {/* 60s Animated Countdown Progress Bar at the top */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-950/80 overflow-hidden">
-                  <div
-                    className="h-full bg-linear-to-r from-[#84cc16] to-emerald-400 transition-all duration-1000 ease-linear"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-tr from-[#3f6212] to-[#65a30d] text-xs font-bold text-white shadow-md shadow-lime-950/40">
-                      <UserCheck className="h-4.5 w-4.5" />
-                    </div>
-                    <div className="truncate">
-                      <div className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-2">
-                        <span>{req.userName}</span>
-                        <span className="text-[10px] font-mono text-emerald-400/90 font-semibold bg-emerald-950/80 border border-emerald-800/60 px-1.5 py-0.5 rounded-full">
-                          {remainingSec}s
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-emerald-300/70 flex items-center gap-1.5 mt-0.5">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-lime-400 animate-ping" />
-                        <span>Wants to join this meeting</span>
-                      </div>
-                    </div>
+                <div className="relative overflow-hidden rounded-2xl bg-[#08170c]/98 border border-emerald-500/40 p-3 sm:p-3.5 text-white shadow-2xl backdrop-blur-2xl ring-1 ring-lime-400/25">
+                  {/* 60s Animated Countdown Progress Bar at the top */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-950/80 overflow-hidden">
+                    <div
+                      className="h-full bg-linear-to-r from-[#84cc16] to-emerald-400 transition-all duration-1000 ease-linear"
+                      style={{ width: `${progressPercent}%` }}
+                    />
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Admit Button */}
-                    <button
-                      onClick={() => handleAdmitUser(req.requesterSocketId, req.userName)}
-                      className="flex items-center gap-1.5 rounded-full bg-[#3f6212] hover:bg-[#365314] px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:shadow-lime-900/40 active:scale-95 transition-all cursor-pointer"
-                      title="Admit to Meeting"
-                    >
-                      <Check className="h-3.5 w-3.5 text-lime-300" />
-                      <span>Admit</span>
-                    </button>
+                  <div className="flex items-center justify-between gap-3 pt-1">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-tr from-[#3f6212] to-[#65a30d] text-xs font-bold text-white shadow-md shadow-lime-950/40">
+                        <UserCheck className="h-4.5 w-4.5" />
+                      </div>
+                      <div className="truncate">
+                        <div className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-2">
+                          <span>{req.userName}</span>
+                          <span className="text-[10px] font-mono text-emerald-400/90 font-semibold bg-emerald-950/80 border border-emerald-800/60 px-1.5 py-0.5 rounded-full">
+                            {remainingSec}s
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-emerald-300/70 flex items-center gap-1.5 mt-0.5">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-lime-400 animate-ping" />
+                          <span>
+                            {exitType === "admitted"
+                              ? "Admitting guest..."
+                              : exitType === "denied"
+                                ? "Declining request..."
+                                : "Wants to join this meeting"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                    {/* Decline Button */}
-                    <button
-                      onClick={() => handleDenyUser(req.requesterSocketId, req.userName)}
-                      className="flex items-center gap-1.5 rounded-full bg-red-950/80 border border-red-700/60 hover:bg-red-900 hover:border-red-500 px-3.5 py-1.5 text-xs font-bold text-red-200 hover:text-white shadow-md active:scale-95 transition-all cursor-pointer"
-                      title="Decline Request"
-                    >
-                      <X className="h-3.5 w-3.5 text-red-400" />
-                      <span>Decline</span>
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Admit Button */}
+                      <button
+                        onClick={() => handleAdmitUser(req.requesterSocketId, req.userName)}
+                        disabled={isExiting}
+                        className="flex items-center justify-center gap-1.5 rounded-full bg-[#3f6212] hover:bg-[#365314] px-3.5 py-1.5 min-h-9 sm:min-h-10 text-xs font-bold text-white shadow-md hover:shadow-lime-900/40 active:scale-95 transition-all cursor-pointer"
+                        title="Admit to Meeting"
+                      >
+                        <Check className="h-3.5 w-3.5 text-lime-300" />
+                        <span>Admit</span>
+                      </button>
+
+                      {/* Decline Button */}
+                      <button
+                        onClick={() => handleDenyUser(req.requesterSocketId, req.userName)}
+                        disabled={isExiting}
+                        className="flex items-center justify-center gap-1.5 rounded-full bg-red-950/80 border border-red-700/60 hover:bg-red-900 hover:border-red-500 px-3.5 py-1.5 min-h-9 sm:min-h-10 text-xs font-bold text-red-200 hover:text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                        title="Decline Request"
+                      >
+                        <X className="h-3.5 w-3.5 text-red-400" />
+                        <span>Decline</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

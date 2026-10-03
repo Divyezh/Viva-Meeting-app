@@ -12,6 +12,7 @@
     "prestart": "npm run build",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
+    "test:isolation": "tsx test_multi_room_isolation.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,js}\"",

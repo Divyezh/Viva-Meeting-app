@@ -3,6 +3,7 @@ import { Video, X, User, Keyboard, Mic, MicOff, VideoOff, ArrowRight } from "luc
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../brand_logo";
+import { extractRoomId, prepareGuestJoin } from "../../utils/meetingJoin";
 
 interface JoinMeetingModalProps {
   isOpen: boolean;
@@ -10,14 +11,6 @@ interface JoinMeetingModalProps {
   initialMeetingId?: string;
   defaultUserName?: string;
 }
-
-const extractRoomId = (input: string) => {
-  let cleaned = input.trim();
-  if (cleaned.includes("/meeting/")) {
-    cleaned = cleaned.split("/meeting/")[1].split("?")[0].split("#")[0];
-  }
-  return cleaned.replace(/[^a-zA-Z0-9_-]/g, "");
-};
 
 const JoinMeetingModal = ({
   isOpen,
@@ -31,11 +24,13 @@ const JoinMeetingModal = ({
   const [meetingCode, setMeetingCode] = useState(initialMeetingId);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
 
   if (!isOpen) return null;
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isJoining) return;
     const cleanId = extractRoomId(meetingCode);
 
     if (!cleanId || cleanId.length < 3) {
@@ -47,14 +42,23 @@ const JoinMeetingModal = ({
       return;
     }
 
-    localStorage.setItem("meeting_user_name", userName.trim());
-    localStorage.setItem("prejoin_muted", isMicMuted ? "true" : "false");
-    localStorage.setItem("prejoin_camera_off", isCameraOff ? "true" : "false");
-    sessionStorage.removeItem(`is_host_${cleanId}`);
-    localStorage.removeItem(`is_host_${cleanId}`);
+    setIsJoining(true);
 
-    onClose();
-    navigate(`/meeting/${cleanId}`);
+    prepareGuestJoin({
+      roomId: cleanId,
+      userName,
+      muted: isMicMuted,
+      cameraOff: isCameraOff,
+    });
+
+    toast.success("Connecting to meeting room...", {
+      iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
+    });
+
+    setTimeout(() => {
+      onClose();
+      navigate(`/meeting/${cleanId}`);
+    }, 160);
   };
 
   return (
@@ -196,10 +200,20 @@ const JoinMeetingModal = ({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-full bg-[#3f6212] px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-lime-900/20 hover:bg-[#365314] active:scale-95 transition-all"
+              disabled={isJoining}
+              className="flex items-center gap-2 rounded-full bg-[#3f6212] px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-lime-900/20 hover:bg-[#365314] active:scale-95 transition-all cursor-pointer disabled:opacity-85 disabled:cursor-wait"
             >
-              Ask to Join
-              <ArrowRight className="h-4 w-4" />
+              {isJoining ? (
+                <>
+                  <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ask to Join</span>
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </div>
         </form>

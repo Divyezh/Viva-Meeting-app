@@ -27,13 +27,19 @@ const VideoGrid = ({
   isScreenSharing = false,
   onStopScreenShare,
 }: VideoGridProps) => {
-  // Deduplicate peers by userId and filter out any duplicate of localUser
+  // Deduplicate peers by userId and peerId, and strictly filter out any duplicate of localUser
   const uniquePeers = useMemo(() => {
     const seenUserIds = new Set<string>();
+    const seenPeerIds = new Set<string>();
     return peers.filter((p) => {
       if (localUser.userId && p.userId === localUser.userId) {
         return false;
       }
+      if (seenPeerIds.has(p.peerId)) {
+        return false;
+      }
+      seenPeerIds.add(p.peerId);
+
       if (p.userId && seenUserIds.has(p.userId)) {
         return false;
       }
@@ -131,7 +137,7 @@ const VideoGrid = ({
         <div className="flex items-center gap-2.5 overflow-x-auto py-1 px-1 shrink-0 h-32 sm:h-36 scrollbar-thin">
           {/* If presenter is a peer, render local user in filmstrip */}
           {!isScreenSharing && (
-            <div className="h-full w-44 sm:w-52 shrink-0">
+            <div className="h-full w-44 sm:w-52 shrink-0 animate-tile-in transition-all duration-300 ease-out">
               <VideoTile
                 userName={localUser.userName}
                 isMuted={localUser.isMuted}
@@ -149,7 +155,7 @@ const VideoGrid = ({
           {uniquePeers
             .filter((p) => p.peerId !== presenterPeer?.peerId)
             .map((peer) => (
-              <div key={peer.peerId} className="h-full w-44 sm:w-52 shrink-0">
+              <div key={peer.peerId} className="h-full w-44 sm:w-52 shrink-0 animate-tile-in transition-all duration-300 ease-out">
                 <VideoTile
                   userName={peer.userName}
                   isMuted={peer.isMuted}
@@ -169,10 +175,10 @@ const VideoGrid = ({
   // ─── 2. STANDARD BALANCED GRID MODE (OPTIMIZED FOR UP TO 8 PARTICIPANTS) ───
   return (
     <div className="flex h-full w-full items-center justify-center p-2 sm:p-4 pb-28 sm:pb-32 overflow-hidden">
-      <div className={`grid h-full w-full gap-2 sm:gap-3.5 auto-rows-fr place-items-center items-center justify-center ${getGridClasses()}`}>
+      <div className={`grid h-full w-full gap-2 sm:gap-3.5 auto-rows-fr place-items-center items-center justify-center transition-all duration-300 ease-out ${getGridClasses()}`}>
         {/* Remote Connected Peer Tiles (Deduplicated) */}
         {uniquePeers.map((peer) => (
-          <div key={peer.peerId} className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center">
+          <div key={peer.peerId} className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center animate-tile-in transition-all duration-300 ease-out">
             <VideoTile
               userName={peer.userName}
               isMuted={peer.isMuted}
@@ -186,7 +192,7 @@ const VideoGrid = ({
         ))}
 
         {/* Local User Tile */}
-        <div className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center">
+        <div className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center animate-tile-in transition-all duration-300 ease-out">
           <VideoTile
             userName={localUser.userName}
             isMuted={localUser.isMuted}

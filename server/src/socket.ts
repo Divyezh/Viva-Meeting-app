@@ -24,6 +24,12 @@ interface PendingJoinRequest {
 }
 // Pending join requests waiting for host admission or for host to arrive: roomId -> Map(socketId -> PendingJoinRequest)
 const pendingJoinRequests = new Map<string, Map<string, PendingJoinRequest>>();
+// Users the host has admitted per room (survives socket reconnects / page refreshes): roomId -> Set(userId)
+const admittedUsers = new Map<string, Set<string>>();
+
+const isRoomHostSocket = (roomId: string, socketId: string): boolean =>
+  roomHosts.get(roomId)?.socketId === socketId ||
+  (socketToRoom.get(socketId)?.roomId === roomId && !!socketToRoom.get(socketId)?.isHost);
 
 // Screen share permission state per room: roomId -> state
 interface RoomScreenShareState {
@@ -63,6 +69,107 @@ export const setupSocket = (server: HttpServer): Server => {
   io.on("connection", (socket: Socket) => {
     console.log(`[Socket Connected] ID: ${socket.id}`);
 
+    // ─── CENTRALIZED ROOM LEAVE / SWITCH HELPER ───────────────
+    // Strictly guarantees:
+    // 1. Each socket is only ever registered in ONE room's state.
+    // 2. Switching rooms immediately leaves the old room, stops broadcasts, and alerts peers.
+    // 3. Pending knocks in other rooms are cleaned up and old hosts notified.
+    // 4. Empty room states are completely pruned.
+    const leaveCurrentRoom = (newRoomId?: string) => {
+      // Clean up any pending join requests across all rooms (or rooms other than newRoomId)
+      for (const [rId, reqs] of pendingJoinRequests.entries()) {
+        if (rId !== newRoomId && reqs.has(socket.id)) {
+          const removedReq = reqs.get(socket.id);
+          reqs.delete(socket.id);
+          const host = roomHosts.get(rId);
+          if (host && removedReq && host.socketId !== socket.id) {
+            io.to(host.socketId).emit("join-request-cancelled", {
+              requesterSocketId: socket.id,
+              userId: removedReq.userId,
+            });
+          }
+        }
+      }
+
+      const userMeta = socketToRoom.get(socket.id);
+      if (!userMeta) {
+        // Even without userMeta, ensure socket is not lingering in untracked rooms
+        for (const room of socket.rooms) {
+          if (room !== socket.id && room !== newRoomId) {
+            console.log(`[Room Isolation] Socket ${socket.id} left untracked room: "${room}"`);
+            socket.leave(room);
+          }
+        }
+        return;
+      }
+
+      const { roomId: oldRoomId, userId, userName, isHost } = userMeta;
+      if (newRoomId && oldRoomId === newRoomId) {
+        return; // Already registered in this room
+      }
+
+      console.log(
+        `[Room ${newRoomId ? "Switch" : "Left"}] "${userName}" (${socket.id}) leaving "${oldRoomId}"${
+          newRoomId ? ` -> switching to "${newRoomId}"` : ""
+        }`
+      );
+
+      socket.leave(oldRoomId);
+      const roomMap = roomParticipants.get(oldRoomId);
+      const host = roomHosts.get(oldRoomId);
+
+      if (roomMap) {
+        roomMap.delete(socket.id);
+        console.log(
+          `[Room Participants] "${oldRoomId}" remaining active participants: ${roomMap.size}`
+        );
+
+        const shareState = roomScreenShareState.get(oldRoomId);
+        if (shareState) {
+          shareState.allowedSocketIds.delete(socket.id);
+          if (shareState.currentPresenterSocketId === socket.id) {
+            shareState.currentPresenterSocketId = undefined;
+            shareState.currentPresenterUserId = undefined;
+            socket.to(oldRoomId).emit("user-media-toggled", {
+              socketId: socket.id,
+              userId,
+              isScreenSharing: false,
+            });
+          }
+        }
+
+        if (roomMap.size === 0) {
+          roomParticipants.delete(oldRoomId);
+          roomScreenShareState.delete(oldRoomId);
+          admittedUsers.delete(oldRoomId);
+          console.log(`[Room Purged] Room "${oldRoomId}" has no remaining participants, state cleared.`);
+        } else {
+          socket.to(oldRoomId).emit("user-disconnected", {
+            socketId: socket.id,
+            userId,
+          });
+        }
+      }
+
+      if (isHost || (host && host.socketId === socket.id)) {
+        console.log(
+          `[Host Disconnected] "${userName}" left room "${oldRoomId}".`
+        );
+        if (host && host.socketId === socket.id) {
+          roomHosts.delete(oldRoomId);
+        }
+      }
+
+      socketToRoom.delete(socket.id);
+
+      // Explicitly leave all other socket.io rooms (except socket.id and newRoomId)
+      for (const room of socket.rooms) {
+        if (room !== socket.id && room !== newRoomId) {
+          socket.leave(room);
+        }
+      }
+    };
+
     // ─── 0. REQUEST TO JOIN (Waiting Room / Admission Request) ─
     socket.on(
       "request-join",
@@ -83,6 +190,9 @@ export const setupSocket = (server: HttpServer): Server => {
           socket.emit("join-response", { approved: false, reason: "Invalid Room ID" });
           return;
         }
+
+        // Clean up from any previous room before knocking or joining
+        leaveCurrentRoom(roomId);
 
         // 1. If the user is the HOST:
         if (isHost) {
@@ -142,6 +252,17 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
+        // Already admitted? (duplicate emit, refresh, or reconnect) -> approve without bothering host
+        const alreadyInRoom = roomParticipants.get(roomId)?.has(socket.id);
+        if (alreadyInRoom || (userId && admittedUsers.get(roomId)?.has(userId))) {
+          console.log(
+            `[Admission] "${userName}" (${socket.id}) already admitted to "${roomId}" -> auto-approve`
+          );
+          pendingJoinRequests.get(roomId)?.delete(socket.id);
+          socket.emit("join-response", { approved: true, roomId });
+          return;
+        }
+
         // 3. Queue the join request
         const reqItem: PendingJoinRequest = {
           requesterSocketId: socket.id,
@@ -154,6 +275,7 @@ export const setupSocket = (server: HttpServer): Server => {
         if (!pendingJoinRequests.has(roomId)) {
           pendingJoinRequests.set(roomId, new Map());
         }
+
         const roomPending = pendingJoinRequests.get(roomId)!;
         // Clean up any stale socket entries for the same userId (e.g. on socket reconnect)
         for (const [oldSockId, existing] of roomPending.entries()) {
@@ -161,7 +283,13 @@ export const setupSocket = (server: HttpServer): Server => {
             roomPending.delete(oldSockId);
           }
         }
+        const isDuplicateKnock = roomPending.has(socket.id);
         roomPending.set(socket.id, reqItem);
+        console.log(
+          `[Admission] request-join from "${userName}" (${socket.id}) for "${roomId}"${
+            isDuplicateKnock ? " [duplicate - already pending]" : ""
+          }`
+        );
 
         // Find active living host socket (with fallback search in roomParticipants / socketToRoom)
         let host = roomHosts.get(roomId);
@@ -205,8 +333,9 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
-        // Host is present: forward admission request directly to the host immediately!
-        console.log(`[Join Request Instant Forward] "${userName}" (${socket.id}) -> Host (${host.socketId})`);
+        // Host is present: forward admission request to the host (once per guest socket)
+        if (isDuplicateKnock) return;
+        console.log(`[Admission] Forwarding "${userName}" (${socket.id}) -> Host (${host.socketId})`);
         io.to(host.socketId).emit("join-request-received", reqItem);
       }
     );
@@ -218,21 +347,28 @@ export const setupSocket = (server: HttpServer): Server => {
         requesterSocketId,
         approved,
         roomId,
+        reason,
       }: {
         requesterSocketId: string;
         approved: boolean;
         roomId: string;
+        reason?: string;
       }) => {
         console.log(
-          `[Join Decision] Host responded for requester (${requesterSocketId}): ${
+          `[Admission] Host (${socket.id}) decision for requester (${requesterSocketId}) in "${roomId}": ${
             approved ? "APPROVED" : "DENIED"
           }`
         );
 
+        if (!isRoomHostSocket(roomId, socket.id)) {
+          console.warn(`[Admission] Ignoring decision from non-host socket ${socket.id} in "${roomId}"`);
+          return;
+        }
+
         // Check if requester is still connected before approving
         const requesterSocket = io.sockets.sockets.get(requesterSocketId);
         if (!requesterSocket) {
-          console.log(`[Join Decision] Requester ${requesterSocketId} already disconnected.`);
+          console.log(`[Admission] Requester ${requesterSocketId} already disconnected.`);
           pendingJoinRequests.get(roomId)?.delete(requesterSocketId);
           socket.emit("join-request-cancelled", {
             requesterSocketId,
@@ -241,13 +377,22 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
-        // Remove from pending join requests
+        // Remove from pending join requests and record the decision server-side
+        const req = pendingJoinRequests.get(roomId)?.get(requesterSocketId);
         pendingJoinRequests.get(roomId)?.delete(requesterSocketId);
+        if (req?.userId) {
+          if (!admittedUsers.has(roomId)) admittedUsers.set(roomId, new Set());
+          if (approved) admittedUsers.get(roomId)!.add(req.userId);
+          else admittedUsers.get(roomId)!.delete(req.userId);
+        }
 
+        console.log(`[Admission] Sending join-response(approved=${approved}) to ${requesterSocketId}`);
         io.to(requesterSocketId).emit("join-response", {
           approved,
           roomId,
-          reason: approved ? undefined : "The meeting host declined your request to join.",
+          reason: approved
+            ? undefined
+            : reason || "The meeting host declined your request to join.",
         });
       }
     );
@@ -274,6 +419,16 @@ export const setupSocket = (server: HttpServer): Server => {
       }) => {
         if (!roomId) return;
 
+        // Clean up from any previous room before joining this new room
+        leaveCurrentRoom(roomId);
+
+        // Idempotency: the same socket must never be registered twice in a room
+        if (roomParticipants.get(roomId)?.has(socket.id)) {
+          console.log(`[Room] Duplicate join-room from ${socket.id} for "${roomId}" ignored`);
+          return;
+        }
+        pendingJoinRequests.get(roomId)?.delete(socket.id);
+
         // If this user is the host:
         if (isHost) {
           // Re-open room if it was previously closed
@@ -287,14 +442,10 @@ export const setupSocket = (server: HttpServer): Server => {
 
           const pool = getPool();
           if (pool) {
-            try {
-              await pool.query(
-                "UPDATE meetings SET status = 'active', ended_at = NULL WHERE id = $1",
-                [roomId]
-              );
-            } catch (dbErr) {
-              console.warn("[Database] Could not update meeting status to active:", dbErr);
-            }
+            pool.query(
+              "UPDATE meetings SET status = 'active', ended_at = NULL WHERE id = $1",
+              [roomId]
+            ).catch((dbErr) => console.warn("[Database] Could not update meeting status to active:", dbErr));
           }
 
           roomHosts.set(roomId, {
@@ -430,7 +581,7 @@ export const setupSocket = (server: HttpServer): Server => {
         });
 
         console.log(
-          `[Room Joined] "${newUser.userName}" (${socket.id}) entered "${roomId}". Total participants: ${roomMap.size}`
+          `[Room Joined] "${newUser.userName}" (${socket.id}) entered "${roomId}". Total participants in room: ${roomMap.size}`
         );
 
         // 1. Send all already connected participants in the room to the newly joined peer
@@ -451,6 +602,11 @@ export const setupSocket = (server: HttpServer): Server => {
 
     // ─── 1.1 HOST EXPLICITLY CLOSES / ENDS MEETING FOR ALL ───────
     socket.on("host-close-meeting", async ({ roomId }: { roomId: string }) => {
+      if (!isRoomHostSocket(roomId, socket.id)) {
+        console.warn(`[Host Close Blocked] Non-host socket ${socket.id} attempted to close "${roomId}"`);
+        return;
+      }
+
       console.log(`[Host Closed Meeting] Room: ${roomId} closed by host ${socket.id}`);
       closedMeetings.add(roomId);
 
@@ -494,6 +650,7 @@ export const setupSocket = (server: HttpServer): Server => {
       roomParticipants.delete(roomId);
       roomHosts.delete(roomId);
       roomScreenShareState.delete(roomId);
+      admittedUsers.delete(roomId);
     });
 
     // ─── 2. WEBRTC SIGNALING: OFFER ───────────────────────────
@@ -514,6 +671,15 @@ export const setupSocket = (server: HttpServer): Server => {
           isCameraOff?: boolean;
         };
       }) => {
+        const callerRoom = socketToRoom.get(socket.id)?.roomId;
+        const targetRoom = socketToRoom.get(targetSocketId)?.roomId;
+        if (!callerRoom || !targetRoom || callerRoom !== targetRoom) {
+          console.warn(
+            `[WebRTC Blocked] Offer cross-room attempt: caller ${socket.id} (room "${callerRoom}") -> target ${targetSocketId} (room "${targetRoom}")`
+          );
+          return;
+        }
+
         io.to(targetSocketId).emit("webrtc-offer", {
           callerSocketId: socket.id,
           offer,
@@ -526,6 +692,15 @@ export const setupSocket = (server: HttpServer): Server => {
     socket.on(
       "webrtc-answer",
       ({ targetSocketId, answer }: { targetSocketId: string; answer: any }) => {
+        const callerRoom = socketToRoom.get(socket.id)?.roomId;
+        const targetRoom = socketToRoom.get(targetSocketId)?.roomId;
+        if (!callerRoom || !targetRoom || callerRoom !== targetRoom) {
+          console.warn(
+            `[WebRTC Blocked] Answer cross-room attempt: responder ${socket.id} (room "${callerRoom}") -> target ${targetSocketId} (room "${targetRoom}")`
+          );
+          return;
+        }
+
         io.to(targetSocketId).emit("webrtc-answer", {
           responderSocketId: socket.id,
           answer,
@@ -537,6 +712,15 @@ export const setupSocket = (server: HttpServer): Server => {
     socket.on(
       "ice-candidate",
       ({ targetSocketId, candidate }: { targetSocketId: string; candidate: any }) => {
+        const callerRoom = socketToRoom.get(socket.id)?.roomId;
+        const targetRoom = socketToRoom.get(targetSocketId)?.roomId;
+        if (!callerRoom || !targetRoom || callerRoom !== targetRoom) {
+          console.warn(
+            `[WebRTC Blocked] ICE candidate cross-room attempt: sender ${socket.id} (room "${callerRoom}") -> target ${targetSocketId} (room "${targetRoom}")`
+          );
+          return;
+        }
+
         io.to(targetSocketId).emit("ice-candidate", {
           senderSocketId: socket.id,
           candidate,
@@ -558,6 +742,12 @@ export const setupSocket = (server: HttpServer): Server => {
         isCameraOff?: boolean;
         isScreenSharing?: boolean;
       }) => {
+        const userMeta = socketToRoom.get(socket.id);
+        if (!userMeta || userMeta.roomId !== roomId) {
+          console.warn(`[Media Toggle Blocked] Socket ${socket.id} not verified in room "${roomId}"`);
+          return;
+        }
+
         const roomMap = roomParticipants.get(roomId);
         if (roomMap && roomMap.has(socket.id)) {
           const user = roomMap.get(socket.id)!;
@@ -600,6 +790,9 @@ export const setupSocket = (server: HttpServer): Server => {
         userId: string;
         userName: string;
       }) => {
+        const userMeta = socketToRoom.get(socket.id);
+        if (!userMeta || userMeta.roomId !== roomId) return;
+
         const host = roomHosts.get(roomId);
         if (host) {
           console.log(
@@ -629,6 +822,10 @@ export const setupSocket = (server: HttpServer): Server => {
         userId?: string;
         allowed: boolean;
       }) => {
+        if (!isRoomHostSocket(roomId, socket.id)) return;
+        const requesterMeta = socketToRoom.get(requesterSocketId);
+        if (!requesterMeta || requesterMeta.roomId !== roomId) return;
+
         const shareState = getOrCreateScreenShareState(roomId);
         if (allowed) {
           shareState.allowedSocketIds.add(requesterSocketId);
@@ -664,6 +861,12 @@ export const setupSocket = (server: HttpServer): Server => {
         targetUserId?: string;
         allowed: boolean;
       }) => {
+        if (!isRoomHostSocket(roomId, socket.id)) return;
+        if (targetSocketId) {
+          const targetMeta = socketToRoom.get(targetSocketId);
+          if (!targetMeta || targetMeta.roomId !== roomId) return;
+        }
+
         const shareState = getOrCreateScreenShareState(roomId);
         if (allowed) {
           if (targetSocketId) shareState.allowedSocketIds.add(targetSocketId);
@@ -694,6 +897,8 @@ export const setupSocket = (server: HttpServer): Server => {
     socket.on(
       "toggle-all-screen-share",
       ({ roomId, allAllowed }: { roomId: string; allAllowed: boolean }) => {
+        if (!isRoomHostSocket(roomId, socket.id)) return;
+
         const shareState = getOrCreateScreenShareState(roomId);
         shareState.allAllowed = allAllowed;
 
@@ -724,7 +929,10 @@ export const setupSocket = (server: HttpServer): Server => {
     socket.on(
       "stop-participant-screen-share",
       ({ roomId, targetSocketId }: { roomId: string; targetSocketId: string }) => {
+        if (!isRoomHostSocket(roomId, socket.id)) return;
         if (targetSocketId) {
+          const targetMeta = socketToRoom.get(targetSocketId);
+          if (!targetMeta || targetMeta.roomId !== roomId) return;
           io.to(targetSocketId).emit("force-stop-screen-share");
         }
       }
@@ -748,6 +956,11 @@ export const setupSocket = (server: HttpServer): Server => {
         };
       }) => {
         if (!roomId || !reaction) return;
+        const userMeta = socketToRoom.get(socket.id);
+        if (!userMeta || userMeta.roomId !== roomId) {
+          console.warn(`[Reaction Blocked] Socket ${socket.id} not verified in room "${roomId}"`);
+          return;
+        }
         io.to(roomId).emit("new-reaction", reaction);
       }
     );
@@ -773,6 +986,11 @@ export const setupSocket = (server: HttpServer): Server => {
         };
       }) => {
         if (!roomId || !caption) return;
+        const userMeta = socketToRoom.get(socket.id);
+        if (!userMeta || userMeta.roomId !== roomId) {
+          console.warn(`[Caption Blocked] Socket ${socket.id} not verified in room "${roomId}"`);
+          return;
+        }
         io.to(roomId).emit("new-caption", caption);
       }
     );
@@ -795,6 +1013,11 @@ export const setupSocket = (server: HttpServer): Server => {
         };
       }) => {
         if (!roomId || !message) return;
+        const userMeta = socketToRoom.get(socket.id);
+        if (!userMeta || userMeta.roomId !== roomId) {
+          console.warn(`[Chat Blocked] Socket ${socket.id} not in room "${roomId}"`);
+          return;
+        }
 
         const formattedMsg: MeetingMessage = {
           id: message.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -812,17 +1035,13 @@ export const setupSocket = (server: HttpServer): Server => {
         }
         memoryMessages.get(roomId)?.push(formattedMsg);
 
-        // Persist to PostgreSQL if configured
+        // Persist to PostgreSQL if configured (non-blocking)
         const pool = getPool();
         if (pool) {
-          try {
-            await pool.query(
-              "INSERT INTO meeting_messages (id, meeting_id, user_id, message) VALUES ($1, $2, $3, $4)",
-              [formattedMsg.id, formattedMsg.meetingId, formattedMsg.userId, formattedMsg.message]
-            );
-          } catch (dbErr) {
-            console.warn("[Database] Could not persist message to PostgreSQL:", dbErr);
-          }
+          pool.query(
+            "INSERT INTO meeting_messages (id, meeting_id, user_id, message) VALUES ($1, $2, $3, $4)",
+            [formattedMsg.id, formattedMsg.meetingId, formattedMsg.userId, formattedMsg.message]
+          ).catch((dbErr) => console.warn("[Database] Could not persist message to PostgreSQL:", dbErr));
         }
 
         // Broadcast to everyone in the room (including sender)
@@ -831,74 +1050,8 @@ export const setupSocket = (server: HttpServer): Server => {
     );
 
     // ─── 7. DISCONNECT & LEAVE ROOM ───────────────────────────
-    const handleLeave = async () => {
-      // Remove any pending join request by this socket and inform host
-      for (const [rId, reqs] of pendingJoinRequests.entries()) {
-        if (reqs.has(socket.id)) {
-          const removedReq = reqs.get(socket.id);
-          reqs.delete(socket.id);
-          const host = roomHosts.get(rId);
-          if (host && removedReq) {
-            io.to(host.socketId).emit("join-request-cancelled", {
-              requesterSocketId: socket.id,
-              userId: removedReq.userId,
-            });
-          }
-        }
-      }
-
-      const userMeta = socketToRoom.get(socket.id);
-      if (!userMeta) return;
-
-      const { roomId, userId, userName, isHost } = userMeta;
-      const roomMap = roomParticipants.get(roomId);
-      const host = roomHosts.get(roomId);
-
-      if (roomMap) {
-        roomMap.delete(socket.id);
-        console.log(
-          `[Room Left] "${userName}" (${socket.id}) exited "${roomId}". Remaining: ${roomMap.size}`
-        );
-
-        const shareState = roomScreenShareState.get(roomId);
-        if (shareState) {
-          shareState.allowedSocketIds.delete(socket.id);
-          if (shareState.currentPresenterSocketId === socket.id) {
-            shareState.currentPresenterSocketId = undefined;
-            shareState.currentPresenterUserId = undefined;
-            socket.to(roomId).emit("user-media-toggled", {
-              socketId: socket.id,
-              userId,
-              isScreenSharing: false,
-            });
-          }
-        }
-
-        if (roomMap.size === 0) {
-          roomParticipants.delete(roomId);
-          roomScreenShareState.delete(roomId);
-        } else {
-          socket.to(roomId).emit("user-disconnected", {
-            socketId: socket.id,
-            userId,
-          });
-        }
-      }
-
-      // If the user who disconnected was the host:
-      // Note: We DO NOT permanently close the meeting or set closedMeetings on simple disconnect!
-      // The host may be refreshing or experiencing a transient socket reconnect.
-      // Only the explicit "host-close-meeting" event permanently ends the meeting.
-      if (isHost || (host && host.socketId === socket.id)) {
-        console.log(
-          `[Host Disconnected] "${userName}" socket disconnected from room "${roomId}". Room remains valid.`
-        );
-        if (host && host.socketId === socket.id) {
-          roomHosts.delete(roomId);
-        }
-      }
-
-      socketToRoom.delete(socket.id);
+    const handleLeave = () => {
+      leaveCurrentRoom();
     };
 
     socket.on("leave-room", handleLeave);
