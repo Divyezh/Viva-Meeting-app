@@ -49,13 +49,13 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
       {/* Centered Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl shadow-black/10 animate-scale-in sm:p-8"
+          className="relative w-full max-w-xl rounded-2xl bg-[#242424] border border-[#383838] p-6 shadow-2xl text-[#f3f4f6] animate-scale-in sm:p-8"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close */}
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-700"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-[#9ca3af] transition-colors hover:bg-[#2a2a2a] hover:text-[#f3f4f6] cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -63,22 +63,22 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
           {/* Header */}
           <div className="mb-5">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-surface-100 px-2.5 py-1 font-mono text-[10px] text-surface-500">
+              <span className="rounded-full bg-[#1e1e1e] border border-[#383838] px-2.5 py-1 font-mono text-[10px] text-[#9ca3af]">
                 {shortId}
               </span>
-              <span className="rounded-full bg-surface-100 px-2.5 py-1 text-[10px] font-semibold text-surface-500">
+              <span className="rounded-full bg-[#1e1e1e] border border-[#383838] px-2.5 py-1 text-[10px] font-semibold text-[#9ca3af]">
                 Ended
               </span>
             </div>
-            <h2 className="mb-1 text-xl font-bold text-surface-900">{detail.meeting.title}</h2>
-            <p className="text-xs text-surface-400">
+            <h2 className="mb-1 text-xl font-bold text-[#f3f4f6]">{detail.meeting.title}</h2>
+            <p className="text-xs text-[#9ca3af]">
               Host: Divyesh Soni · Created {formatDate(detail.meeting.createdAt)} · Duration:{" "}
               {detail.meeting.duration || "45 min"}
             </p>
           </div>
 
           {/* Tabs */}
-          <div className="mb-5 flex border-b border-surface-100">
+          <div className="mb-5 flex border-b border-[#383838]">
             {[
               {
                 key: "chat" as const,
@@ -96,10 +96,10 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-all cursor-pointer ${
                   activeTab === tab.key
-                    ? "border-brand-600 text-brand-600"
-                    : "border-transparent text-surface-400 hover:text-surface-600"
+                    ? "border-[#10b981] text-[#34d399]"
+                    : "border-transparent text-[#9ca3af] hover:text-[#f3f4f6]"
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -115,14 +115,14 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
                 {detail.messages.map((msg) => (
                   <div key={msg.id}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold text-surface-800">
+                      <span className="text-sm font-semibold text-[#f3f4f6]">
                         {msg.senderName}
                       </span>
-                      <span className="text-[11px] text-surface-400">
+                      <span className="text-[11px] text-[#9ca3af]">
                         {formatTime(msg.createdAt)}
                       </span>
                     </div>
-                    <div className="rounded-xl bg-surface-50 px-4 py-2.5 text-sm text-surface-600">
+                    <div className="rounded-xl bg-[#1e1e1e] border border-[#383838] px-4 py-2.5 text-sm text-[#d1d5db]">
                       {msg.message}
                     </div>
                   </div>
@@ -131,13 +131,13 @@ const SessionDetailModal = ({ detail, isOpen, onClose }: SessionDetailModalProps
             ) : (
               <div className="space-y-2">
                 {detail.participants.map((p) => (
-                  <div key={p.id} className="flex items-center gap-3 rounded-xl bg-surface-50 p-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+                  <div key={p.id} className="flex items-center gap-3 rounded-xl bg-[#1e1e1e] border border-[#383838] p-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#10b981]/20 border border-[#10b981]/30 text-xs font-bold text-[#34d399]">
                       {getInitials(p.fullName)}
                     </div>
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-surface-800">{p.fullName}</h4>
-                      <div className="flex items-center gap-3 text-xs text-surface-400">
+                      <h4 className="text-sm font-semibold text-[#f3f4f6]">{p.fullName}</h4>
+                      <div className="flex items-center gap-3 text-xs text-[#9ca3af]">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           Joined {formatTime(p.joinedAt)}

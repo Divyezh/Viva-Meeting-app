@@ -232,12 +232,12 @@ export const useCaptions = ({
             ? "Captions ON (Hindi Speech → English Captions)"
             : "Live Captions Enabled",
           {
-            style: { background: "#081307", color: "#ffffff", border: "1px solid #4ade80" },
+            style: { background: "#1e1e1e", color: "#f3f4f6", border: "1px solid #10b981" },
           }
         );
       } else {
         toast("Live captions turned off", {
-          style: { background: "#081307", color: "#ffffff", border: "1px solid #365314" },
+          style: { background: "#1e1e1e", color: "#f3f4f6", border: "1px solid #383838" },
         });
         setActiveCaption(null);
       }

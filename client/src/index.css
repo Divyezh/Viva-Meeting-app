@@ -1,5 +1,47 @@
 @import "tailwindcss";
 
+:root {
+  /* ─── Surface & Background Design Tokens (Dark Charcoal Base) ─── */
+  --color-bg-primary: #1a1a1a;
+  --color-bg-surface: #242424;
+  --color-bg-surface-elevated: #2a2a2a;
+  --color-bg-surface-hover: #333333;
+  --color-bg-surface-subtle: #202020;
+
+  /* ─── Border Tokens ─── */
+  --color-border: #383838;
+  --color-border-subtle: #2e2e2e;
+  --color-border-hover: #4a4a4a;
+  --color-border-focus: #10b981;
+
+  /* ─── Typography & Contrast (WCAG AA Compliant) ─── */
+  --color-text-primary: #f3f4f6;       /* Crisp off-white headings & body text */
+  --color-text-secondary: #d1d5db;     /* High-legibility neutral gray */
+  --color-text-muted: #9ca3af;         /* Muted secondary labels & timestamps */
+  --color-text-subtle: #6b7280;        /* Subtle hints */
+
+  /* ─── Single Brand Accent: Refined Forest / Sage Emerald ─── */
+  --color-accent: #10b981;             /* Primary CTA & key interactive states */
+  --color-accent-hover: #059669;       /* Button hover state */
+  --color-accent-active: #047857;      /* Active click state */
+  --color-accent-text: #34d399;        /* High-contrast text on charcoal (AAA) */
+  --color-accent-subtle: rgba(16, 185, 129, 0.12); /* Subtle pill fill */
+  --color-accent-border: rgba(16, 185, 129, 0.28); /* Subtle pill outline */
+
+  /* ─── Feedback & Semantic Colors ─── */
+  --color-danger: #ea4335;
+  --color-danger-hover: #d93025;
+  --color-warning: #f59e0b;
+
+  /* ─── Shared Animation Timing ─── */
+  --anim-duration-fast: 160ms;
+  --anim-duration-normal: 240ms;
+  --anim-duration-smooth: 320ms;
+  --anim-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --anim-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --anim-ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
 @layer base {
   * {
     margin: 0;
@@ -16,8 +58,8 @@
       "Segoe UI",
       Roboto,
       sans-serif;
-    background-color: #ffffff;
-    color: #0f172a;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
@@ -29,147 +71,28 @@
   font-family: "Inter", system-ui, sans-serif;
 }
 
-/* ─── White Upper & Olive Pista Green Downward Shader (Matches Reference Layout) ─── */
-.bg-viva-shader {
-  background-color: #ffffff;
-  background-image:
-    /* Central glowing pista-lime radial shader bloom */
-    radial-gradient(
-      1100px circle at 50% 70%,
-      rgba(190, 242, 100, 0.45) 0%,
-      rgba(132, 204, 22, 0.38) 28%,
-      rgba(77, 124, 15, 0.28) 55%,
-      transparent 80%
-    ),
-    /* Soft left ambient olive-pista shader */
-    radial-gradient(
-        850px circle at 12% 88%,
-        rgba(163, 230, 53, 0.35) 0%,
-        rgba(77, 124, 15, 0.2) 45%,
-        transparent 70%
-      ),
-    /* Soft right ambient olive-pista shader */
-    radial-gradient(
-        850px circle at 88% 88%,
-        rgba(101, 163, 13, 0.32) 0%,
-        rgba(54, 83, 20, 0.2) 45%,
-        transparent 70%
-      ),
-    /* Smooth vertical transition: pure white at top -> soft pista -> rich olive green downwards */
-    linear-gradient(
-        180deg,
-        #ffffff 0%,
-        #ffffff 22%,
-        #f8fcf8 34%,
-        #e8f7ea 48%,
-        #bdf2c3 64%,
-        #7ed978 76%,
-        #51961c 88%,
-        #386412 95%,
-        #24440a 100%
-      );
-  background-attachment: fixed;
-  background-size: 100% 100%;
+/* ─── Legacy Class Overrides: Flatten All Gradients to Solid Dark Charcoal ─── */
+.bg-viva-shader,
+.page-gradient,
+.bg-app-gradient,
+.bg-deep-forest-mesh {
+  background-color: var(--color-bg-primary) !important;
+  background-image: none !important;
 }
 
-.page-gradient {
-  background:
-    radial-gradient(
-      900px circle at 50% 10%,
-      rgba(255, 255, 255, 0.9) 0%,
-      rgba(240, 253, 244, 0.6) 40%,
-      transparent 75%
-    ),
-    radial-gradient(
-      850px circle at 50% 65%,
-      rgba(134, 239, 172, 0.35) 0%,
-      rgba(77, 124, 15, 0.3) 45%,
-      transparent 80%
-    ),
-    linear-gradient(
-      180deg,
-      #ffffff 0%,
-      #f4fbf4 20%,
-      #c7f9cc 42%,
-      #4b7218 64%,
-      #223c15 80%,
-      #0a160a 100%
-    );
-  background-attachment: fixed;
-  background-color: #0a160a;
-}
-
-/* ─── Glassmorphism Cards with Pista / Olive Tinted Borders & Glow ─── */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(209, 240, 215, 0.85);
-  box-shadow:
-    0 12px 32px -6px rgba(47, 94, 38, 0.07),
-    0 4px 12px -2px rgba(0, 0, 0, 0.03);
+/* ─── Solid Charcoal Cards & Surfaces (Layered Elevation without Glowing Outlines) ─── */
+.glass-panel,
+.glass-card-solid,
+.glass-card-forest,
+.glass-panel-dark {
+  background-color: var(--color-bg-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4) !important;
 }
 
 .glass-card-subtle {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(209, 240, 215, 0.75);
-  box-shadow: 0 4px 20px -2px rgba(47, 94, 38, 0.05);
-}
-
-.glass-card-solid {
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(209, 240, 215, 0.95);
-  box-shadow: 0 20px 40px -12px rgba(47, 94, 38, 0.12);
-}
-
-/* ─── Glowing Orbital Rings Decorative Effect ─── */
-.orbital-glow-ring {
-  border: 1px solid rgba(134, 239, 172, 0.4);
-  box-shadow:
-    0 0 35px rgba(163, 230, 53, 0.15),
-    inset 0 0 25px rgba(134, 239, 172, 0.08);
-}
-
-/* ─── Dark Forest Dot-Grid & Mesh Texture ─── */
-.bg-deep-forest-mesh {
-  background-color: #071c14;
-  background-image:
-    radial-gradient(1000px circle at 50% -10%, rgba(163, 230, 53, 0.14) 0%, transparent 60%),
-    radial-gradient(800px circle at 85% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 55%),
-    radial-gradient(700px circle at 15% 80%, rgba(132, 204, 22, 0.08) 0%, transparent 50%),
-    radial-gradient(rgba(163, 230, 53, 0.14) 1.2px, transparent 1.2px);
-  background-size:
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    28px 28px;
-}
-
-.bg-dot-pattern {
-  background-image: radial-gradient(rgba(163, 230, 53, 0.15) 1.2px, transparent 1.2px);
-  background-size: 24px 24px;
-}
-
-/* ─── Dark Forest Glass Panels ─── */
-.glass-panel-dark {
-  background: rgba(7, 28, 20, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(163, 230, 53, 0.18);
-  box-shadow:
-    0 20px 50px -10px rgba(0, 0, 0, 0.6),
-    0 0 30px -5px rgba(163, 230, 53, 0.06);
-}
-
-.glass-card-forest {
-  background: rgba(11, 41, 30, 0.65);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(163, 230, 53, 0.15);
+  background-color: var(--color-bg-surface-elevated) !important;
+  border: 1px solid var(--color-border) !important;
 }
 
 /* ─── Equalizer Soundwave Animation ─── */
@@ -215,16 +138,6 @@
   animation: soundwave-3 0.9s ease-in-out infinite 0.3s;
 }
 
-/* ─── Shared Animation Timing & Design Tokens ─── */
-:root {
-  --anim-duration-fast: 160ms;
-  --anim-duration-normal: 240ms;
-  --anim-duration-smooth: 320ms;
-  --anim-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --anim-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --anim-ease-out: cubic-bezier(0, 0, 0.2, 1);
-}
-
 /* ─── GPU-Accelerated Keyframe Animations ─── */
 @keyframes fadeIn {
   from {
@@ -247,7 +160,7 @@
 @keyframes scaleUp {
   from {
     opacity: 0;
-    transform: scale(0.95) translateY(4px);
+    transform: scale(0.96) translateY(4px);
   }
   to {
     opacity: 1;
@@ -262,14 +175,14 @@
   }
   to {
     opacity: 0;
-    transform: scale(0.95) translateY(4px);
+    transform: scale(0.96) translateY(4px);
   }
 }
 
 @keyframes slideDownFade {
   from {
     opacity: 0;
-    transform: translateY(-16px) scale(0.97);
+    transform: translateY(-12px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -284,50 +197,18 @@
   }
   to {
     opacity: 0;
-    transform: translateY(-14px) scale(0.97);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+    transform: translateY(-12px) scale(0.98);
   }
 }
 
 @keyframes tileIn {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
     transform: scale(1);
-  }
-}
-
-@keyframes pulseGlow {
-  0%,
-  100% {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.03);
-  }
-}
-
-@keyframes shimmerProgress {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
   }
 }
 
@@ -360,16 +241,6 @@
   animation: tileIn var(--anim-duration-normal) var(--anim-ease-spring) forwards;
 }
 
-.animate-pulse-glow {
-  animation: pulseGlow 2.4s ease-in-out infinite;
-}
-
-.animate-shimmer-progress {
-  background: linear-gradient(90deg, #10b981 0%, #a3e635 50%, #10b981 100%);
-  background-size: 200% 100%;
-  animation: shimmerProgress 2s linear infinite;
-}
-
 /* ─── Smooth Micro-Interactions & Transitions ─── */
 button,
 a,
@@ -392,7 +263,7 @@ button:not(:disabled):active {
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -403,6 +274,8 @@ button:disabled {
 
 [role="status"] {
   animation: slideDownFade var(--anim-duration-normal) var(--anim-ease-spring) forwards !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+  background-color: var(--color-bg-surface-elevated) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
 }

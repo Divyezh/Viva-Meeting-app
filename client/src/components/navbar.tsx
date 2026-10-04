@@ -24,23 +24,23 @@ const Navbar = ({
 
   return (
     <header className="sticky top-3.5 z-50 w-full px-3 sm:px-6 lg:px-8 pointer-events-none">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur-md shadow-sm pointer-events-auto transition-all">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 rounded-2xl border border-[#383838] bg-[#242424] shadow-md pointer-events-auto transition-all">
         {/* Left: Brand Logo */}
         <div className="flex items-center gap-5">
           <Link
             to="/"
             className="flex items-center gap-2.5 transition-transform hover:scale-105 active:scale-95 group"
           >
-            <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200/80 shadow-xs group-hover:border-emerald-300 transition-colors">
-              <BrandLogo className="h-5 w-5" color="#4d7c0f" />
+            <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-[#2a2a2a] border border-[#383838] shadow-xs group-hover:border-[#4a4a4a] transition-colors">
+              <BrandLogo className="h-5 w-5" color="#10b981" />
             </div>
-            <span className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-              VIVA<span className="text-[#4d7c0f]"> Meeting</span>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-white">
+              VIVA<span className="text-[#10b981]"> Meeting</span>
             </span>
           </Link>
 
           {/* Desktop Nav Pills */}
-          <nav className="hidden items-center gap-1 rounded-full bg-slate-100/80 p-1 border border-slate-200/60 md:flex">
+          <nav className="hidden items-center gap-1 rounded-full bg-[#1a1a1a] p-1 border border-[#383838] md:flex">
             {navLinks.map((link) => {
               const isActive =
                 link.path === "/"
@@ -51,10 +51,10 @@ const Navbar = ({
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
                     isActive
-                      ? "bg-white text-[#1e3a1e] shadow-xs font-bold border border-slate-200/50"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-[#2a2a2a] text-white shadow-xs border border-[#4a4a4a]"
+                      : "text-[#9ca3af] hover:text-white"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -68,15 +68,15 @@ const Navbar = ({
         {/* Right: User Welcome & Clerk User Controls */}
         <div className="flex items-center gap-3">
           <SignedIn>
-            <span className="hidden text-xs text-slate-600 sm:inline-block">
-              Welcome, <strong className="font-semibold text-slate-900">{displayName}</strong>
+            <span className="hidden text-xs text-[#9ca3af] sm:inline-block">
+              Welcome, <strong className="font-semibold text-white">{displayName}</strong>
             </span>
             <div className="flex items-center">
               <UserButton
                 afterSignOutUrl="/login"
                 appearance={{
                   elements: {
-                    avatarBox: "h-8 w-8 ring-2 ring-emerald-500/20 shadow-xs",
+                    avatarBox: "h-8 w-8 ring-2 ring-[#10b981]/30 shadow-xs",
                   },
                 }}
               />
@@ -85,7 +85,7 @@ const Navbar = ({
 
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="flex items-center gap-1.5 rounded-full bg-[#3f6212] hover:bg-[#365314] px-4 py-1.5 text-xs font-semibold text-white shadow-xs active:scale-95 transition-all cursor-pointer">
+              <button className="flex items-center gap-1.5 rounded-full bg-[#10b981] hover:bg-[#059669] px-4 py-1.5 text-xs font-medium text-white shadow-sm active:scale-95 transition-all cursor-pointer">
                 Sign In
               </button>
             </SignInButton>
@@ -94,7 +94,7 @@ const Navbar = ({
       </div>
 
       {/* Mobile Navigation Dock */}
-      <div className="mx-auto mt-2 flex max-w-sm items-center justify-around rounded-full border border-slate-200/80 bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-md md:hidden pointer-events-auto">
+      <div className="mx-auto mt-2 flex max-w-sm items-center justify-around rounded-full border border-[#383838] bg-[#242424] px-3 py-1.5 shadow-md md:hidden pointer-events-auto">
         {navLinks.map((link) => {
           const isActive =
             link.path === "/"
@@ -105,10 +105,10 @@ const Navbar = ({
             <Link
               key={link.name}
               to={link.path}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 isActive
-                  ? "bg-emerald-50 text-emerald-800 font-bold"
-                  : "text-slate-500 hover:text-slate-800"
+                  ? "bg-[#2a2a2a] text-[#34d399] border border-[#4a4a4a]"
+                  : "text-[#9ca3af] hover:text-white"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />

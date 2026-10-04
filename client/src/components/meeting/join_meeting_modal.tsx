@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Video, X, User, Keyboard, Mic, MicOff, VideoOff, ArrowRight } from "lucide-react";
+import { X, User, Keyboard, Mic, MicOff, Video, VideoOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../brand_logo";
@@ -52,7 +52,11 @@ const JoinMeetingModal = ({
     });
 
     toast.success("Connecting to meeting room...", {
-      iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
+      style: {
+        background: "#242424",
+        color: "#f3f4f6",
+        border: "1px solid #383838",
+      },
     });
 
     setTimeout(() => {
@@ -63,31 +67,28 @@ const JoinMeetingModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop blur overlay */}
+      {/* Backdrop overlay */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-md transition-opacity animate-fade-in"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white/95 border border-emerald-900/10 p-6 sm:p-8 text-slate-900 shadow-2xl shadow-emerald-950/15 backdrop-blur-2xl z-10 animate-scale-up">
-        {/* Ambient Top Luminous Glow */}
-        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-80 rounded-full bg-linear-to-b from-emerald-200/40 via-lime-200/20 to-transparent blur-3xl opacity-80" />
-
+      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-[#242424] border border-[#383838] p-6 sm:p-8 text-white shadow-2xl z-10 animate-scale-up">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-emerald-900/10 pb-4 mb-6 relative">
+        <div className="flex items-center justify-between border-b border-[#383838] pb-4 mb-6 relative">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-200/80 shadow-md shadow-lime-900/10">
-              <BrandLogo className="h-6 w-6" color="#4d7c0f" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2a2a2a] border border-[#383838] shadow-xs">
+              <BrandLogo className="h-6 w-6" color="#10b981" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight text-slate-900">Join a Meeting</h2>
-                <span className="rounded-full bg-emerald-100/70 px-2.5 py-0.5 text-[10px] font-bold text-[#3f6212] border border-emerald-200/80">
+                <h2 className="text-lg font-bold tracking-tight text-white">Join a Meeting</h2>
+                <span className="rounded-full bg-[#2a2a2a] px-2.5 py-0.5 text-[10px] font-medium text-[#10b981] border border-[#383838]">
                   Guest / Attendee
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
+              <p className="text-xs text-[#9ca3af] font-normal mt-0.5">
                 Enter your details to request admission to the call
               </p>
             </div>
@@ -95,93 +96,95 @@ const JoinMeetingModal = ({
 
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9ca3af] hover:bg-[#333333] hover:text-white transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Form */}
+        {/* Form Body */}
         <form onSubmit={handleJoin} className="space-y-4.5 relative">
-          {/* 1. Meeting Code / Link */}
+          {/* 1. Meeting Code Input */}
           <div>
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Meeting Code or Link
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[#d1d5db]">
+              Meeting Code or Invite Link
             </label>
             <div className="relative">
-              <Keyboard className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4d7c0f]" />
+              <Keyboard className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#10b981]" />
               <input
                 type="text"
                 required
                 value={meetingCode}
                 onChange={(e) => setMeetingCode(e.target.value)}
-                placeholder="e.g. o4x-qs7-1bo or paste full link"
-                className="font-mono w-full rounded-2xl bg-[#f8fcf8] border border-emerald-900/15 py-3 pl-10 pr-4 text-sm font-semibold text-[#142417] placeholder:text-slate-400 outline-none transition-all focus:bg-white focus:border-[#3f6212] focus:ring-3 focus:ring-[#3f6212]/10 shadow-2xs"
+                placeholder="e.g. abc-def-ghi or full URL"
+                className="w-full rounded-xl bg-[#1e1e1e] border border-[#383838] py-2.5 pl-10 pr-4 text-sm font-medium text-white placeholder:text-[#9ca3af] outline-none transition-colors focus:border-[#10b981]"
               />
             </div>
           </div>
 
-          {/* 2. Your Name */}
+          {/* 2. Your Display Name */}
           <div>
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[#d1d5db]">
               Your Display Name
             </label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4d7c0f]" />
+              <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#10b981]" />
               <input
                 type="text"
                 required
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full rounded-2xl bg-[#f8fcf8] border border-emerald-900/15 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:bg-white focus:border-[#3f6212] focus:ring-3 focus:ring-[#3f6212]/10 shadow-2xs"
+                className="w-full rounded-xl bg-[#1e1e1e] border border-[#383838] py-2.5 pl-10 pr-4 text-sm font-medium text-white placeholder:text-[#9ca3af] outline-none transition-colors focus:border-[#10b981]"
               />
             </div>
           </div>
 
-          {/* 3. Audio / Video Preferences */}
+          {/* 3. Pre-Join Media Preferences */}
           <div className="pt-2">
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-[#d1d5db]">
               Pre-Join Preferences
             </label>
             <div className="grid grid-cols-2 gap-3">
+              {/* Mic Toggle */}
               <button
                 type="button"
                 onClick={() => setIsMicMuted(!isMicMuted)}
-                className={`flex items-center justify-between rounded-2xl border p-3 text-left transition-all ${
+                className={`flex items-center justify-between rounded-xl border p-3 text-left transition-colors cursor-pointer ${
                   isMicMuted
-                    ? "bg-red-50/70 border-red-200 text-red-800 shadow-2xs"
-                    : "bg-emerald-50/70 border-emerald-200 text-[#142417] hover:border-[#65a30d] shadow-2xs"
+                    ? "bg-[#2a2a2a] border-[#383838] text-[#ea4335]"
+                    : "bg-[#2a2a2a] border-[#383838] text-white hover:border-[#4a4a4a]"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   {isMicMuted ? (
-                    <MicOff className="h-4 w-4 text-red-600" />
+                    <MicOff className="h-4 w-4 text-[#ea4335]" />
                   ) : (
-                    <Mic className="h-4 w-4 text-[#4d7c0f]" />
+                    <Mic className="h-4 w-4 text-[#10b981]" />
                   )}
-                  <span className="text-xs font-bold">
+                  <span className="text-xs font-medium">
                     {isMicMuted ? "Mic Muted" : "Mic Active"}
                   </span>
                 </div>
               </button>
 
+              {/* Camera Toggle */}
               <button
                 type="button"
                 onClick={() => setIsCameraOff(!isCameraOff)}
-                className={`flex items-center justify-between rounded-2xl border p-3 text-left transition-all ${
+                className={`flex items-center justify-between rounded-xl border p-3 text-left transition-colors cursor-pointer ${
                   isCameraOff
-                    ? "bg-red-50/70 border-red-200 text-red-800 shadow-2xs"
-                    : "bg-emerald-50/70 border-emerald-200 text-[#142417] hover:border-[#65a30d] shadow-2xs"
+                    ? "bg-[#2a2a2a] border-[#383838] text-[#ea4335]"
+                    : "bg-[#2a2a2a] border-[#383838] text-white hover:border-[#4a4a4a]"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   {isCameraOff ? (
-                    <VideoOff className="h-4 w-4 text-red-600" />
+                    <VideoOff className="h-4 w-4 text-[#ea4335]" />
                   ) : (
-                    <Video className="h-4 w-4 text-[#4d7c0f]" />
+                    <Video className="h-4 w-4 text-[#10b981]" />
                   )}
-                  <span className="text-xs font-bold">
+                  <span className="text-xs font-medium">
                     {isCameraOff ? "Camera Off" : "Camera On"}
                   </span>
                 </div>
@@ -189,19 +192,19 @@ const JoinMeetingModal = ({
             </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-emerald-900/10">
+          {/* 4. Footer Actions */}
+          <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[#383838]">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              className="rounded-full px-5 py-2.5 text-xs font-medium text-[#9ca3af] hover:bg-[#333333] hover:text-white transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isJoining}
-              className="flex items-center gap-2 rounded-full bg-[#3f6212] px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-lime-900/20 hover:bg-[#365314] active:scale-95 transition-all cursor-pointer disabled:opacity-85 disabled:cursor-wait"
+              className="flex items-center gap-2 rounded-full bg-[#10b981] hover:bg-[#059669] px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-75"
             >
               {isJoining ? (
                 <>
@@ -210,7 +213,7 @@ const JoinMeetingModal = ({
                 </>
               ) : (
                 <>
-                  <span>Ask to Join</span>
+                  <span>Join Meeting</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

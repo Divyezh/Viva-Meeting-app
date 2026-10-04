@@ -149,6 +149,21 @@ const MeetingRoom = () => {
     };
   }, [inLobby]);
 
+  // Ensure lobby video element attaches and plays reliably whenever stream or camera state updates
+  useEffect(() => {
+    const videoEl = lobbyVideoRef.current;
+    if (!videoEl || !lobbyStream) return;
+    videoEl.muted = true;
+    videoEl.defaultMuted = true;
+    videoEl.volume = 0;
+    if (videoEl.srcObject !== lobbyStream) {
+      videoEl.srcObject = lobbyStream;
+    }
+    if (!lobbyCameraOff) {
+      videoEl.play().catch(() => {});
+    }
+  }, [lobbyStream, inLobby, lobbyCameraOff]);
+
   // Load user name from Clerk, state, localStorage or default
   const currentUserName = useMemo(() => {
     if (user?.fullName) return user.fullName;
@@ -180,9 +195,7 @@ const MeetingRoom = () => {
 
   // ─── Sidebar / Drawer State ─────────────────────────────────
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [activePanelTab, setActivePanelTab] = useState<
-    "transcript" | "chat" | "notes" | "participants"
-  >("chat");
+  const [activePanelTab, setActivePanelTab] = useState<"chat" | "participants">("chat");
 
   // Pre-join audio and camera preferences
   const initialMuted = useMemo(() => {
@@ -191,6 +204,15 @@ const MeetingRoom = () => {
   const initialCameraOff = useMemo(() => {
     return lobbyCameraOff || localStorage.getItem("prejoin_camera_off") === "true";
   }, [lobbyCameraOff]);
+
+  const currentUserObj = useMemo(
+    () => ({
+      userId: currentUserId,
+      userName: currentUserName,
+      avatarUrl: currentUserAvatar,
+    }),
+    [currentUserId, currentUserName, currentUserAvatar]
+  );
 
   // ─── Real-World WebRTC Peer Engine ──────────────────────────
   const {
@@ -222,11 +244,7 @@ const MeetingRoom = () => {
     leaveMeeting,
   } = useWebRTC({
     roomId: cleanRoomId,
-    currentUser: {
-      userId: currentUserId,
-      userName: currentUserName,
-      avatarUrl: currentUserAvatar,
-    },
+    currentUser: currentUserObj,
     initialMuted,
     initialCameraOff,
     // Only start media/signaling once Clerk has resolved, so the userId never flips mid-session
@@ -280,7 +298,7 @@ const MeetingRoom = () => {
       if (elapsed >= 250) {
         setAdmissionStatus("admitted");
         toast.success("Joined meeting room!", {
-          iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
+          iconTheme: { primary: "#10b981", secondary: "#ffffff" },
         });
         clearInterval(interval);
       }
@@ -719,15 +737,6 @@ const MeetingRoom = () => {
     }
   }, [isPanelOpen, activePanelTab]);
 
-  const handleToggleTranscript = useCallback(() => {
-    if (isPanelOpen && activePanelTab === "transcript") {
-      setIsPanelOpen(false);
-    } else {
-      setIsPanelOpen(true);
-      setActivePanelTab("transcript");
-    }
-  }, [isPanelOpen, activePanelTab]);
-
   const handleLeave = useCallback(() => {
     if (isHost) {
       socket.emit("host-close-meeting", { roomId: cleanRoomId });
@@ -741,28 +750,24 @@ const MeetingRoom = () => {
   // ─── 0. PRE-JOIN LOBBY VIEW (GUEST ENTERS NAME & PREVIEWS CAMERA) ─
   if (inLobby) {
     return (
-      <div className="bg-app-gradient relative min-h-screen flex flex-col justify-between p-4 sm:p-6 overflow-hidden selection:bg-emerald-100 selection:text-emerald-900">
+      <div className="relative min-h-screen flex flex-col justify-between p-4 sm:p-6 bg-[#1a1a1a] text-[#f3f4f6]">
         <Toaster position="top-center" />
-
-        {/* Ambient background glows */}
-        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-137.5 w-137.5 rounded-full bg-linear-to-b from-emerald-200/40 via-lime-200/20 to-transparent blur-3xl opacity-70" />
-        <div className="pointer-events-none absolute -bottom-24 right-1/4 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
 
         {/* Top Header */}
         <header className="relative z-10 mx-auto flex w-full max-w-4xl items-center justify-between py-2">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/90 border border-emerald-200/80 shadow-md shadow-lime-900/10 backdrop-blur-md">
-              <BrandLogo className="h-6 w-6" color="#4d7c0f" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#242424] border border-[#383838] shadow-md">
+              <BrandLogo className="h-6 w-6" color="#10b981" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900">
-              Viva Meeting<span className="text-[#65a30d]">.</span>
+            <span className="text-lg font-bold tracking-tight text-[#f3f4f6]">
+              Viva Meeting<span className="text-[#10b981]">.</span>
             </span>
           </Link>
 
           {!user && (
             <Link
               to="/login"
-              className="flex items-center gap-1.5 rounded-full bg-[#3f6212] hover:bg-[#365314] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all"
+              className="flex items-center gap-1.5 rounded-full bg-[#10b981] hover:bg-[#059669] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition-all"
             >
               Sign In
             </Link>
@@ -774,37 +779,38 @@ const MeetingRoom = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left: Video Preview */}
             <div className="lg:col-span-7 flex flex-col items-center">
-              <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-slate-950 border border-emerald-900/30 shadow-2xl flex items-center justify-center">
+              <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-[#1e1e1e] border border-[#383838] shadow-2xl flex items-center justify-center">
                 <video
                   ref={lobbyVideoRef}
                   autoPlay
                   playsInline
                   muted
+                  onLoadedMetadata={() => lobbyVideoRef.current?.play().catch(() => {})}
                   className={`h-full w-full object-cover scale-x-[-1] transition-opacity duration-300 ${
                     lobbyCameraOff ? "opacity-0" : "opacity-100"
                   }`}
                 />
 
                 {lobbyCameraOff && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-b from-slate-900 to-slate-950">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-950/80 border border-emerald-600/40 text-emerald-300 shadow-xl text-2xl font-bold">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1e1e1e]">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#242424] border border-[#383838] text-[#f3f4f6] shadow-xl text-2xl font-bold">
                       {lobbyName.trim() ? lobbyName.trim().charAt(0).toUpperCase() : "G"}
                     </div>
-                    <span className="mt-3 text-xs font-medium text-slate-400">Camera is off</span>
+                    <span className="mt-3 text-xs font-medium text-[#9ca3af]">Camera is off</span>
                   </div>
                 )}
 
                 <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
-                  <span className="rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[11px] font-semibold text-white border border-white/10 flex items-center gap-1.5">
+                  <span className="rounded-full bg-[#1e1e1e]/90 px-3 py-1 text-[11px] font-semibold text-white border border-[#383838] flex items-center gap-1.5">
                     <span
-                      className={`h-2 w-2 rounded-full ${lobbyMicMuted ? "bg-red-400" : "bg-lime-400 animate-pulse"}`}
+                      className={`h-2 w-2 rounded-full ${lobbyMicMuted ? "bg-red-400" : "bg-[#10b981] animate-pulse"}`}
                     />
                     {lobbyName.trim() ? lobbyName.trim() : "Guest Preview"}
                   </span>
                 </div>
 
                 {/* Floating Media Toggles */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/60 backdrop-blur-md p-2 rounded-full border border-white/15 shadow-lg">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-[#1e1e1e]/90 p-2 rounded-full border border-[#383838] shadow-lg">
                   <button
                     type="button"
                     onClick={() => {
@@ -817,7 +823,7 @@ const MeetingRoom = () => {
                     className={`flex h-11 w-11 items-center justify-center rounded-full transition-all active:scale-95 ${
                       lobbyMicMuted
                         ? "bg-red-500 hover:bg-red-600 text-white"
-                        : "bg-white/20 hover:bg-white/30 text-white"
+                        : "bg-[#2a2a2a] hover:bg-[#383838] text-white"
                     }`}
                     title={lobbyMicMuted ? "Unmute Mic" : "Mute Mic"}
                   >
@@ -836,7 +842,7 @@ const MeetingRoom = () => {
                     className={`flex h-11 w-11 items-center justify-center rounded-full transition-all active:scale-95 ${
                       lobbyCameraOff
                         ? "bg-red-500 hover:bg-red-600 text-white"
-                        : "bg-white/20 hover:bg-white/30 text-white"
+                        : "bg-[#2a2a2a] hover:bg-[#383838] text-white"
                     }`}
                     title={lobbyCameraOff ? "Turn Camera On" : "Turn Camera Off"}
                   >
@@ -845,7 +851,7 @@ const MeetingRoom = () => {
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-slate-500 font-medium">
+              <div className="mt-3 flex items-center justify-center gap-4 text-[11px] text-[#9ca3af] font-medium">
                 <span>{lobbyMicMuted ? "Mic muted" : "Mic active"}</span>
                 <span>•</span>
                 <span>{lobbyCameraOff ? "Camera off" : "Camera active"}</span>
@@ -854,41 +860,41 @@ const MeetingRoom = () => {
 
             {/* Right: Join Form */}
             <div className="lg:col-span-5">
-              <div className="relative rounded-3xl bg-white/95 border border-emerald-900/10 p-6 sm:p-8 shadow-2xl shadow-emerald-950/10 backdrop-blur-xl">
+              <div className="relative rounded-3xl bg-[#242424] border border-[#383838] p-6 sm:p-8 shadow-2xl">
                 <div className="mb-5">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-bold text-[#3f6212] mb-2.5">
-                    <Sparkles className="h-3 w-3 text-[#65a30d]" />
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-[#1e1e1e] border border-[#383838] px-2.5 py-0.5 text-[11px] font-bold text-[#34d399] mb-2.5">
+                    <Sparkles className="h-3 w-3 text-[#10b981]" />
                     <span>Meeting Room</span>
                   </div>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[#f3f4f6]">
                     Ready to join?
                   </h1>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Room: <span className="font-mono font-bold text-slate-700">{cleanRoomId}</span>
+                  <p className="mt-1 text-xs text-[#9ca3af]">
+                    Room: <span className="font-mono font-bold text-[#f3f4f6]">{cleanRoomId}</span>
                   </p>
                 </div>
 
                 <form onSubmit={handleLobbyJoin} className="space-y-4">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">
+                    <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#9ca3af]">
                       Your Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4d7c0f]" />
+                      <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#10b981]" />
                       <input
                         type="text"
                         required
                         value={lobbyName}
                         onChange={(e) => setLobbyName(e.target.value)}
                         placeholder="Enter your name to join"
-                        className="w-full rounded-2xl bg-[#f8fcf8] border border-emerald-900/15 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:bg-white focus:border-[#3f6212] focus:ring-3 focus:ring-[#3f6212]/10 shadow-2xs"
+                        className="w-full rounded-2xl bg-[#1e1e1e] border border-[#383838] py-3 pl-10 pr-4 text-sm font-medium text-[#f3f4f6] placeholder-[#6b7280] outline-none transition-all focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981]"
                       />
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-[#3f6212] hover:bg-[#365314] py-3.5 text-sm font-bold text-white shadow-lg shadow-lime-900/20 active:scale-95 transition-all cursor-pointer"
+                    className="w-full mt-2 flex items-center justify-center gap-2 rounded-full bg-[#10b981] hover:bg-[#059669] py-3.5 text-sm font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
                   >
                     <span>Ask to Join</span>
                     <ArrowRight className="h-4 w-4" />
@@ -897,20 +903,20 @@ const MeetingRoom = () => {
                   <button
                     type="button"
                     onClick={handleReturnHome}
-                    className="w-full flex items-center justify-center gap-2 rounded-full border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 rounded-full border border-[#383838] py-2.5 text-xs font-semibold text-[#9ca3af] hover:text-[#f3f4f6] hover:bg-[#2a2a2a] transition-colors"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                     <span>Back</span>
                   </button>
                 </form>
 
-                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <div className="mt-5 pt-4 border-t border-[#383838] flex items-center justify-between text-[11px] text-[#9ca3af]">
                   <div className="flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5 text-[#4d7c0f]" />
+                    <Shield className="h-3.5 w-3.5 text-[#10b981]" />
                     <span>Encrypted Call</span>
                   </div>
                   {!user && (
-                    <Link to="/login" className="font-semibold text-[#3f6212] hover:underline">
+                    <Link to="/login" className="font-semibold text-[#34d399] hover:underline">
                       Sign In instead
                     </Link>
                   )}
@@ -920,7 +926,7 @@ const MeetingRoom = () => {
           </div>
         </main>
 
-        <footer className="relative z-10 text-center py-2 text-[11px] text-slate-500">
+        <footer className="relative z-10 text-center py-2 text-[11px] text-[#9ca3af]">
           Viva Meeting &copy; {new Date().getFullYear()} · No sign-in required for guests
         </footer>
       </div>
@@ -930,49 +936,39 @@ const MeetingRoom = () => {
   // ─── 1. WAITING ROOM VIEW (GUEST WAITING FOR HOST ADMISSION) ─
   if (admissionStatus === "waiting") {
     return (
-      <div className="bg-app-gradient relative flex min-h-screen w-screen items-center justify-center p-4 overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
+      <div className="relative flex min-h-screen w-screen items-center justify-center p-4 bg-[#1a1a1a] text-[#f3f4f6]">
         <Toaster position="top-center" />
 
-        {/* Ambient atmospheric glows */}
-        <div className="pointer-events-none absolute -top-40 left-1/3 h-137.5 w-137.5 rounded-full bg-emerald-500/15 blur-3xl opacity-80" />
-        <div className="pointer-events-none absolute -bottom-40 right-1/4 h-137.5 w-137.5 rounded-full bg-[#84cc16]/15 blur-3xl opacity-80" />
-
-        {/* Concentric orbital circles */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-96 w-96 rounded-full border border-emerald-300/20 opacity-50 animate-pulse" />
-          <div className="absolute h-137.5 w-137.5 rounded-full border border-lime-300/15 opacity-40" />
-        </div>
-
-        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#081307]/90 border border-emerald-800/50 p-8 text-center shadow-2xl backdrop-blur-2xl">
+        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#242424] border border-[#383838] p-8 text-center shadow-2xl">
           {/* Pulsing Animated Icon */}
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-linear-to-br from-[#3f6212] to-[#65a30d] shadow-xl shadow-lime-950/50 relative">
-            <Clock className="h-9 w-9 text-white animate-spin [animation-duration:6s]" />
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] shadow-lg relative">
+            <Clock className="h-9 w-9 text-[#10b981] animate-spin [animation-duration:6s]" />
             <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#84cc16]"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-[#10b981]"></span>
             </span>
           </div>
 
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 border border-emerald-700/50 px-3 py-1 text-[11px] font-semibold text-emerald-300">
-            <Sparkles className="h-3 w-3 text-[#84cc16]" />
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[#1e1e1e] border border-[#383838] px-3 py-1 text-[11px] font-semibold text-[#34d399]">
+            <Sparkles className="h-3 w-3 text-[#10b981]" />
             <span>Waiting for Host Admission</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight text-white mt-3">Asking to join...</h2>
-          <p className="mt-2 text-xs leading-relaxed text-emerald-200/70">
+          <h2 className="text-2xl font-bold tracking-tight text-[#f3f4f6] mt-3">Asking to join...</h2>
+          <p className="mt-2 text-xs leading-relaxed text-[#9ca3af]">
             Your request has been sent to the host. You'll automatically enter the meeting once they
             let you in.
           </p>
 
           {/* Meeting & User Summary Card */}
-          <div className="mt-6 rounded-2xl bg-emerald-950/40 border border-emerald-800/40 p-4 text-left">
-            <div className="flex items-center justify-between border-b border-emerald-900/40 pb-2.5 mb-2.5">
-              <span className="text-xs text-emerald-300/60 font-medium">Meeting Code</span>
-              <span className="font-mono text-xs font-bold text-emerald-200">{cleanRoomId}</span>
+          <div className="mt-6 rounded-2xl bg-[#1e1e1e] border border-[#383838] p-4 text-left">
+            <div className="flex items-center justify-between border-b border-[#383838] pb-2.5 mb-2.5">
+              <span className="text-xs text-[#9ca3af] font-medium">Meeting Code</span>
+              <span className="font-mono text-xs font-bold text-[#f3f4f6]">{cleanRoomId}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-emerald-300/60 font-medium">Joining As</span>
-              <span className="text-xs font-bold text-white truncate max-w-40">
+              <span className="text-xs text-[#9ca3af] font-medium">Joining As</span>
+              <span className="text-xs font-bold text-[#f3f4f6] truncate max-w-40">
                 {currentUserName}
               </span>
             </div>
@@ -982,7 +978,7 @@ const MeetingRoom = () => {
           <div className="mt-7 flex flex-col gap-2.5">
             <button
               onClick={handleReturnHome}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-emerald-800/60 bg-emerald-950/60 py-3 text-xs font-semibold text-emerald-200 transition-all hover:bg-emerald-900/60 hover:text-white active:scale-95"
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-[#383838] bg-[#1e1e1e] py-3 text-xs font-semibold text-[#f3f4f6] transition-all hover:bg-[#2a2a2a] active:scale-95"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Cancel & Return Home
@@ -1008,22 +1004,22 @@ const MeetingRoom = () => {
   // ─── 2. DENIED ADMISSION VIEW ────────────────────────────────
   if (admissionStatus === "denied") {
     return (
-      <div className="bg-app-gradient relative flex min-h-screen w-screen items-center justify-center p-4 overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
+      <div className="relative flex min-h-screen w-screen items-center justify-center p-4 bg-[#1a1a1a] text-[#f3f4f6]">
         <Toaster position="top-center" />
 
-        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#081307]/90 border border-red-900/40 p-8 text-center shadow-2xl backdrop-blur-2xl">
+        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#242424] border border-red-500/30 p-8 text-center shadow-2xl">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-950/50 border border-red-800/60 text-red-400">
             <ShieldAlert className="h-8 w-8" />
           </div>
 
           <h2 className="text-xl font-bold text-white">Unable to Join</h2>
-          <p className="mt-2 text-xs leading-relaxed text-slate-400">
+          <p className="mt-2 text-xs leading-relaxed text-[#9ca3af]">
             The host declined your request to join this meeting room.
           </p>
 
           <button
             onClick={handleReturnHome}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#3f6212] py-3 text-xs font-bold text-white shadow-md hover:bg-[#365314] active:scale-95 transition-all"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#10b981] py-3 text-xs font-bold text-white shadow-md hover:bg-[#059669] active:scale-95 transition-all"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back
@@ -1036,39 +1032,35 @@ const MeetingRoom = () => {
   // ─── 3. HOST CLOSED THE MEETING VIEW (CLEAN REAL-LOOK TEXT) ───
   if (admissionStatus === "closed") {
     return (
-      <div className="bg-app-gradient relative flex min-h-screen w-screen items-center justify-center p-4 overflow-hidden selection:bg-emerald-900 selection:text-emerald-100">
+      <div className="relative flex min-h-screen w-screen items-center justify-center p-4 bg-[#1a1a1a] text-[#f3f4f6]">
         <Toaster position="top-center" />
 
-        {/* Ambient atmospheric glows */}
-        <div className="pointer-events-none absolute -top-40 left-1/3 h-137.5 w-137.5 rounded-full bg-emerald-500/10 blur-3xl opacity-80" />
-        <div className="pointer-events-none absolute -bottom-40 right-1/4 h-137.5 w-137.5 rounded-full bg-[#84cc16]/10 blur-3xl opacity-80" />
-
-        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#081307]/90 border border-emerald-900/40 p-8 text-center shadow-2xl backdrop-blur-2xl">
+        <div className="relative z-10 w-full max-w-md rounded-3xl bg-[#242424] border border-[#383838] p-8 text-center shadow-2xl">
           {/* Simple real icon */}
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-950/70 border border-emerald-800/50 text-emerald-400 shadow-lg">
-            <PhoneOff className="h-8 w-8 text-emerald-400" />
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1e1e1e] border border-[#383838] text-[#9ca3af] shadow-lg">
+            <PhoneOff className="h-8 w-8 text-[#9ca3af]" />
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight text-white">Host closed the meeting</h2>
-          <p className="mt-2 text-xs leading-relaxed text-slate-400">
+          <p className="mt-2 text-xs leading-relaxed text-[#9ca3af]">
             {closedReason || "The host has ended this meeting session."}
           </p>
 
           {/* Meeting details pill */}
-          <div className="mt-6 rounded-2xl bg-emerald-950/40 border border-emerald-800/30 p-4 text-left">
-            <div className="flex items-center justify-between border-b border-emerald-900/40 pb-2.5 mb-2.5">
-              <span className="text-xs text-emerald-300/60 font-medium">Meeting Code</span>
-              <span className="font-mono text-xs font-bold text-emerald-200">{cleanRoomId}</span>
+          <div className="mt-6 rounded-2xl bg-[#1e1e1e] border border-[#383838] p-4 text-left">
+            <div className="flex items-center justify-between border-b border-[#383838] pb-2.5 mb-2.5">
+              <span className="text-xs text-[#9ca3af] font-medium">Meeting Code</span>
+              <span className="font-mono text-xs font-bold text-[#f3f4f6]">{cleanRoomId}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-emerald-300/60 font-medium">Status</span>
+              <span className="text-xs text-[#9ca3af] font-medium">Status</span>
               <span className="text-xs font-semibold text-red-400">Ended by Host</span>
             </div>
           </div>
 
           <button
             onClick={handleReturnHome}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#3f6212] py-3 text-xs font-bold text-white shadow-md hover:bg-[#365314] active:scale-95 transition-all"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#10b981] py-3 text-xs font-bold text-white shadow-md hover:bg-[#059669] active:scale-95 transition-all"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back
@@ -1080,7 +1072,7 @@ const MeetingRoom = () => {
 
   // ─── 3. ACTIVE MEETING ROOM VIEW ─────────────────────────────
   return (
-    <div className="relative h-dvh w-screen overflow-hidden bg-[#08120a] flex flex-col selection:bg-emerald-900 selection:text-emerald-100">
+    <div className="relative h-dvh w-screen overflow-hidden bg-[#202124] flex flex-col selection:bg-[#3c4043] selection:text-white">
       <Toaster position="top-center" />
 
       {/* ─── Seamless Connecting & Media Permission Overlay ─── */}
@@ -1107,35 +1099,34 @@ const MeetingRoom = () => {
             return (
               <div
                 key={req.requesterSocketId}
-                className={`transition-all duration-240 ease-out ${
+                className={`transition-all duration-200 ease-out ${
                   isExiting
                     ? "opacity-0 -translate-y-3 scale-95 pointer-events-none max-h-0 py-0 my-0 overflow-hidden"
                     : "opacity-100 translate-y-0 scale-100 animate-slide-down"
                 }`}
               >
-                <div className="relative overflow-hidden rounded-2xl bg-[#08170c]/98 border border-emerald-500/40 p-3 sm:p-3.5 text-white shadow-2xl backdrop-blur-2xl ring-1 ring-lime-400/25">
-                  {/* 60s Animated Countdown Progress Bar at the top */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-950/80 overflow-hidden">
+                <div className="relative overflow-hidden rounded-xl bg-[#282a2d] border border-[#3c4043] p-3 sm:p-3.5 text-white shadow-xl">
+                  {/* 60s Progress Bar at top */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-[#202124] overflow-hidden">
                     <div
-                      className="h-full bg-linear-to-r from-[#84cc16] to-emerald-400 transition-all duration-1000 ease-linear"
+                      className="h-full bg-[#1a73e8] transition-all duration-1000 ease-linear"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
 
                   <div className="flex items-center justify-between gap-3 pt-1">
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-tr from-[#3f6212] to-[#65a30d] text-xs font-bold text-white shadow-md shadow-lime-950/40">
-                        <UserCheck className="h-4.5 w-4.5" />
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3c4043] text-xs font-semibold text-white">
+                        <UserCheck className="h-4.5 w-4.5 text-[#8ab4f8]" />
                       </div>
                       <div className="truncate">
-                        <div className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-2">
+                        <div className="text-xs sm:text-sm font-medium text-white truncate flex items-center gap-2">
                           <span>{req.userName}</span>
-                          <span className="text-[10px] font-mono text-emerald-400/90 font-semibold bg-emerald-950/80 border border-emerald-800/60 px-1.5 py-0.5 rounded-full">
+                          <span className="text-[10px] font-mono text-[#9aa0a6] bg-[#202124] border border-[#3c4043] px-1.5 py-0.5 rounded-md">
                             {remainingSec}s
                           </span>
                         </div>
-                        <div className="text-[11px] text-emerald-300/70 flex items-center gap-1.5 mt-0.5">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-lime-400 animate-ping" />
+                        <div className="text-[11px] text-[#9aa0a6] flex items-center gap-1.5 mt-0.5">
                           <span>
                             {exitType === "admitted"
                               ? "Admitting guest..."
@@ -1152,10 +1143,10 @@ const MeetingRoom = () => {
                       <button
                         onClick={() => handleAdmitUser(req.requesterSocketId, req.userName)}
                         disabled={isExiting}
-                        className="flex items-center justify-center gap-1.5 rounded-full bg-[#3f6212] hover:bg-[#365314] px-3.5 py-1.5 min-h-9 sm:min-h-10 text-xs font-bold text-white shadow-md hover:shadow-lime-900/40 active:scale-95 transition-all cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 rounded-md bg-[#1a73e8] hover:bg-[#1557b0] px-3.5 py-1.5 min-h-9 sm:min-h-10 text-xs font-medium text-white shadow-sm active:scale-95 transition-all cursor-pointer"
                         title="Admit to Meeting"
                       >
-                        <Check className="h-3.5 w-3.5 text-lime-300" />
+                        <Check className="h-3.5 w-3.5 text-white" />
                         <span>Admit</span>
                       </button>
 
@@ -1163,10 +1154,10 @@ const MeetingRoom = () => {
                       <button
                         onClick={() => handleDenyUser(req.requesterSocketId, req.userName)}
                         disabled={isExiting}
-                        className="flex items-center justify-center gap-1.5 rounded-full bg-red-950/80 border border-red-700/60 hover:bg-red-900 hover:border-red-500 px-3.5 py-1.5 min-h-9 sm:min-h-10 text-xs font-bold text-red-200 hover:text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                        className="flex items-center justify-center gap-1.5 rounded-md bg-[#ea4335] hover:bg-[#d93025] px-3.5 py-1.5 min-h-9 sm:min-h-10 text-xs font-medium text-white shadow-sm active:scale-95 transition-all cursor-pointer"
                         title="Decline Request"
                       >
-                        <X className="h-3.5 w-3.5 text-red-400" />
+                        <X className="h-3.5 w-3.5 text-white" />
                         <span>Decline</span>
                       </button>
                     </div>
@@ -1184,27 +1175,27 @@ const MeetingRoom = () => {
           {screenShareRequests.map((req) => (
             <div
               key={req.requesterSocketId}
-              className="relative flex items-center justify-between gap-3 rounded-2xl bg-[#081307]/95 border border-lime-500/50 p-3.5 backdrop-blur-xl shadow-2xl shadow-black/80 animate-fade-in"
+              className="relative flex items-center justify-between gap-3 rounded-xl bg-[#282a2d] border border-[#3c4043] p-3 shadow-xl animate-fade-in"
             >
               <div className="flex items-center gap-3 truncate">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-lime-500/20 text-lime-400 border border-lime-500/30">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3c4043] text-[#8ab4f8]">
                   <MonitorUp className="h-4.5 w-4.5" />
                 </div>
                 <div className="truncate">
-                  <div className="text-xs font-bold text-white truncate">{req.userName}</div>
-                  <div className="text-[11px] text-lime-300/80">Wants to share screen</div>
+                  <div className="text-xs font-medium text-white truncate">{req.userName}</div>
+                  <div className="text-[11px] text-[#9aa0a6]">Wants to share screen</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => respondScreenShareRequest(req.requesterSocketId, req.userId, true)}
-                  className="rounded-full bg-lime-600 hover:bg-lime-500 px-3 py-1 text-xs font-bold text-slate-950 shadow-md active:scale-95 transition-all cursor-pointer"
+                  className="rounded-md bg-[#1a73e8] hover:bg-[#1557b0] px-3 py-1 text-xs font-medium text-white transition-colors cursor-pointer"
                 >
                   Allow
                 </button>
                 <button
                   onClick={() => respondScreenShareRequest(req.requesterSocketId, req.userId, false)}
-                  className="rounded-full bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 text-xs font-semibold text-zinc-300 active:scale-95 transition-all cursor-pointer"
+                  className="rounded-md bg-[#3c4043] hover:bg-[#474a4d] px-2.5 py-1 text-xs font-medium text-white transition-colors cursor-pointer"
                 >
                   Deny
                 </button>
@@ -1213,10 +1204,6 @@ const MeetingRoom = () => {
           ))}
         </div>
       )}
-
-      {/* ─── Ambient Atmospheric Glow in Background ─── */}
-      <div className="pointer-events-none absolute -top-40 left-1/3 h-137.5 w-137.5 rounded-full bg-emerald-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 h-137.5 w-137.5 rounded-full bg-[#84cc16]/10 blur-3xl" />
 
       {/* ─── Top Meeting Header Bar ─── */}
       <MeetingHeader
@@ -1232,8 +1219,8 @@ const MeetingRoom = () => {
       <div className="relative flex-1 overflow-hidden flex">
         {/* Left Video Grid Area */}
         <div
-          className={`relative h-full flex-1 transition-all duration-300 ${
-            isPanelOpen ? "mr-0 lg:mr-95" : ""
+          className={`relative h-full flex-1 transition-all duration-200 ${
+            isPanelOpen ? "mr-0 md:mr-88 lg:mr-96" : ""
           }`}
         >
           <VideoGrid
@@ -1253,9 +1240,9 @@ const MeetingRoom = () => {
           />
         </div>
 
-        {/* Right Sidebar: Live Chat, People & Notes */}
+        {/* Right Sidebar: Live Chat & People (Responsive Drawer/Overlay) */}
         {isPanelOpen && (
-          <div className="absolute inset-y-0 right-0 z-20 w-full sm:w-95 shadow-2xl transition-all">
+          <div className="fixed sm:absolute inset-y-0 right-0 z-30 w-full sm:w-88 md:w-96 shadow-2xl transition-all">
             <TranscriptPanel
               messages={messages}
               currentUserId={currentUserId}
@@ -1305,7 +1292,6 @@ const MeetingRoom = () => {
         isScreenSharing={isScreenSharing}
         canShareScreen={canShareScreen || allScreenShareAllowed}
         isChatOpen={isPanelOpen && activePanelTab === "chat"}
-        isTranscriptOpen={isPanelOpen && activePanelTab === "transcript"}
         isParticipantsOpen={isPanelOpen && activePanelTab === "participants"}
         isCaptionsEnabled={isCaptionsEnabled}
         unreadCount={0}
@@ -1317,7 +1303,6 @@ const MeetingRoom = () => {
         onToggleScreenShare={toggleScreenShare}
         onRequestScreenSharePermission={requestScreenSharePermission}
         onToggleChat={handleToggleChat}
-        onToggleTranscript={handleToggleTranscript}
         onToggleParticipants={handleToggleParticipants}
         onToggleCaptions={toggleCaptions}
         onOpenCaptionsModal={() => setIsCaptionsModalOpen(true)}

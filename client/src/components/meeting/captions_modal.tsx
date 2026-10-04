@@ -52,11 +52,11 @@ export const CaptionsModal = ({
       />
 
       {/* Clean Modern Modal Container */}
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-[#141815] border border-white/10 p-5 sm:p-6 text-zinc-100 shadow-2xl shadow-black/80 z-10 animate-scale-up">
+      <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-[#242424] border border-[#383838] p-5 sm:p-6 text-zinc-100 shadow-2xl z-10 animate-scale-up">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-[#383838]">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-lime-400">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#10b981]/15 border border-[#10b981]/30 text-[#34d399]">
               <Subtitles className="h-4.5 w-4.5" />
             </div>
             <div>
@@ -78,7 +78,7 @@ export const CaptionsModal = ({
         </div>
 
         {/* Master Live Captions Switch */}
-        <div className="my-5 flex items-center justify-between rounded-xl bg-white/4 border border-white/6 p-3.5 transition-colors">
+        <div className="my-5 flex items-center justify-between rounded-xl bg-[#1e1e1e] border border-[#383838] p-3.5 transition-colors">
           <div>
             <div className="text-sm font-medium text-white">Live Subtitles</div>
             <div className="text-xs text-zinc-400 mt-0.5">
@@ -91,7 +91,7 @@ export const CaptionsModal = ({
             aria-checked={isCaptionsEnabled}
             onClick={onToggleCaptions}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              isCaptionsEnabled ? "bg-[#4d7c0f]" : "bg-zinc-700"
+              isCaptionsEnabled ? "bg-[#10b981]" : "bg-zinc-700"
             }`}
           >
             <span
@@ -124,12 +124,12 @@ export const CaptionsModal = ({
                     onClick={() => onSelectSpokenLang(lang.code)}
                     className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
                       isSelected
-                        ? "bg-[#25381a] border-lime-500/40 text-lime-300 shadow-xs"
-                        : "bg-white/3 border-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/6"
+                        ? "bg-[#10b981]/20 border-[#10b981]/50 text-[#34d399] shadow-xs"
+                        : "bg-[#1e1e1e] border-[#383838] text-zinc-400 hover:text-zinc-200 hover:bg-[#2a2a2a]"
                     }`}
                   >
                     <span>{lang.label.split(" ")[0]}</span>
-                    {isSelected && <Check className="h-3 w-3 text-lime-400" />}
+                    {isSelected && <Check className="h-3 w-3 text-[#10b981]" />}
                   </button>
                 );
               })}
@@ -140,10 +140,10 @@ export const CaptionsModal = ({
               <select
                 value={spokenLang}
                 onChange={(e) => onSelectSpokenLang(e.target.value)}
-                className="w-full appearance-none rounded-xl bg-zinc-900/90 border border-white/10 py-2.5 pl-3.5 pr-10 text-xs font-medium text-zinc-200 focus:outline-none focus:border-lime-500/50 transition-colors cursor-pointer"
+                className="w-full appearance-none rounded-xl bg-[#1e1e1e] border border-[#383838] py-2.5 pl-3.5 pr-10 text-xs font-medium text-zinc-200 focus:outline-none focus:border-[#10b981] transition-colors cursor-pointer"
               >
                 {SPOKEN_LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code} className="bg-zinc-900 text-white">
+                  <option key={lang.code} value={lang.code} className="bg-[#1e1e1e] text-white">
                     {lang.label}
                   </option>
                 ))}
@@ -172,12 +172,12 @@ export const CaptionsModal = ({
                     onClick={() => onSelectCaptionLang(lang.code)}
                     className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
                       isSelected
-                        ? "bg-[#25381a] border-lime-500/40 text-lime-300 shadow-xs"
-                        : "bg-white/3 border-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/6"
+                        ? "bg-[#10b981]/20 border-[#10b981]/50 text-[#34d399] shadow-xs"
+                        : "bg-[#1e1e1e] border-[#383838] text-zinc-400 hover:text-zinc-200 hover:bg-[#2a2a2a]"
                     }`}
                   >
                     <span>{lang.label}</span>
-                    {isSelected && <Check className="h-3 w-3 text-lime-400" />}
+                    {isSelected && <Check className="h-3 w-3 text-[#10b981]" />}
                   </button>
                 );
               })}
@@ -188,10 +188,10 @@ export const CaptionsModal = ({
               <select
                 value={captionLang}
                 onChange={(e) => onSelectCaptionLang(e.target.value)}
-                className="w-full appearance-none rounded-xl bg-zinc-900/90 border border-white/10 py-2.5 pl-3.5 pr-10 text-xs font-medium text-zinc-200 focus:outline-none focus:border-lime-500/50 transition-colors cursor-pointer"
+                className="w-full appearance-none rounded-xl bg-[#1e1e1e] border border-[#383838] py-2.5 pl-3.5 pr-10 text-xs font-medium text-zinc-200 focus:outline-none focus:border-[#10b981] transition-colors cursor-pointer"
               >
                 {CAPTION_LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code} className="bg-zinc-900 text-white">
+                  <option key={lang.code} value={lang.code} className="bg-[#1e1e1e] text-white">
                     {lang.label}
                   </option>
                 ))}
@@ -202,14 +202,14 @@ export const CaptionsModal = ({
         </div>
 
         {/* Translation Flow Summary Indicator */}
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-white/3 border border-white/6 px-3.5 py-2.5 text-xs text-zinc-300">
+        <div className="mt-4 flex items-center justify-between rounded-xl bg-[#1e1e1e] border border-[#383838] px-3.5 py-2.5 text-xs text-zinc-300">
           <div className="flex items-center gap-2">
-            <Languages className="h-4 w-4 text-lime-400/90" />
+            <Languages className="h-4 w-4 text-[#34d399]" />
             <span className="font-medium text-zinc-200">
               {currentSpoken.label.split(" ")[0]}
             </span>
             <ArrowRight className="h-3 w-3 text-zinc-500" />
-            <span className="font-semibold text-lime-400">
+            <span className="font-semibold text-[#34d399]">
               {currentCaption.label}
             </span>
           </div>
@@ -217,11 +217,11 @@ export const CaptionsModal = ({
         </div>
 
         {/* Clean Footer */}
-        <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
+        <div className="mt-6 pt-4 border-t border-[#383838] flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs">
             {isCaptionsEnabled ? (
-              <span className="flex items-center gap-1.5 text-lime-400 font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-lime-400 animate-pulse" />
+              <span className="flex items-center gap-1.5 text-[#34d399] font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
                 Subtitles active
               </span>
             ) : (
@@ -232,7 +232,7 @@ export const CaptionsModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-[#3f6212] hover:bg-[#4d7c0f] px-5 py-2 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer active:scale-95"
+            className="rounded-xl bg-[#10b981] hover:bg-[#059669] px-5 py-2 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer active:scale-95"
           >
             Done
           </button>

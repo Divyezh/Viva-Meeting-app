@@ -227,12 +227,9 @@ const AudioSettingsModal = ({
       />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-[#0e1217] border border-zinc-800/90 p-6 sm:p-7 text-zinc-100 shadow-2xl z-10 animate-scale-up">
-        {/* Luminous upper ambient glow */}
-        <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-56 w-full rounded-full bg-emerald-500/4 blur-3xl" />
-
+      <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-[#242424] border border-[#383838] p-6 sm:p-7 text-[#f3f4f6] shadow-2xl z-10 animate-scale-up">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4.5 mb-5 relative z-10">
+        <div className="flex items-center justify-between border-b border-[#383838] pb-4.5 mb-5 relative z-10">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200">
               <Sliders className="h-4.5 w-4.5 text-emerald-400" />
@@ -356,7 +353,7 @@ const AudioSettingsModal = ({
                 className={`flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
                   isRecordingTest
                     ? "bg-red-500/20 border border-red-500/40 text-red-400 animate-pulse"
-                    : "bg-lime-500 hover:bg-lime-600 text-zinc-950 active:scale-95 shadow-lg shadow-lime-950/10"
+                    : "bg-[#10b981] hover:bg-[#059669] text-white active:scale-95 shadow-md"
                 }`}
               >
                 <Mic className="h-3.5 w-3.5" />

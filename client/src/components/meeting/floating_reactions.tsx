@@ -66,7 +66,7 @@ const FloatingItem = ({
       className="absolute flex flex-col items-center gap-1.5 will-change-transform"
     >
       {/* Sender Name Pill */}
-      <div className="flex items-center gap-1 rounded-full bg-[#081307]/90 border border-emerald-500/40 px-2.5 py-0.5 shadow-xl backdrop-blur-md">
+      <div className="flex items-center gap-1 rounded-full bg-[#1e1e1e]/90 border border-[#383838] px-2.5 py-0.5 shadow-xl backdrop-blur-md">
         {reaction.senderAvatar ? (
           <img
             src={reaction.senderAvatar}
@@ -74,7 +74,7 @@ const FloatingItem = ({
             className="h-3.5 w-3.5 rounded-full object-cover"
           />
         ) : (
-          <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-lime-500/20 text-[8px] font-bold text-lime-400">
+          <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#10b981]/20 border border-[#10b981]/30 text-[8px] font-bold text-[#34d399]">
             {reaction.senderName.charAt(0).toUpperCase()}
           </span>
         )}

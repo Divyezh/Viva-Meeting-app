@@ -1,8 +1,6 @@
 import { useState } from "react";
 import {
-  FileText,
   MessageSquare,
-  Sparkles,
   Users,
   Send,
   X,
@@ -11,7 +9,6 @@ import {
   Video,
   VideoOff,
   Search,
-  UserPlus,
   Monitor,
   MonitorUp,
   MonitorOff,
@@ -65,16 +62,20 @@ const TranscriptPanel = ({
   onSetParticipantScreenShare,
   onStopParticipantScreenShare,
 }: TranscriptPanelProps) => {
-  const [activeTab, setActiveTab] = useState<"transcript" | "chat" | "notes" | "participants">(
-    initialTab
-  );
+  const normalizeTab = (tab?: string): "people" | "chat" => {
+    if (tab === "participants" || tab === "people") return "people";
+    return "chat";
+  };
+
+  const [activeTab, setActiveTab] = useState<"people" | "chat">(() => normalizeTab(initialTab));
   const [chatInput, setChatInput] = useState("");
   const [participantSearch, setParticipantSearch] = useState("");
-  const [notes, setNotes] = useState<string[]>([
-    "Real-time peer-to-peer WebRTC connection active",
-    "Screen sharing and in-call chat synchronized",
-  ]);
-  const [newNote, setNewNote] = useState("");
+
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+  if (prevInitialTab !== initialTab) {
+    setPrevInitialTab(initialTab);
+    setActiveTab(normalizeTab(initialTab));
+  }
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -87,12 +88,6 @@ const TranscriptPanel = ({
       .slice(0, 2);
   };
 
-  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
-  if (prevInitialTab !== initialTab) {
-    setPrevInitialTab(initialTab);
-    setActiveTab(initialTab);
-  }
-
   const handleSendChat = () => {
     if (chatInput.trim()) {
       onSendMessage(chatInput.trim());
@@ -100,24 +95,15 @@ const TranscriptPanel = ({
     }
   };
 
-  const handleAddNote = () => {
-    if (newNote.trim()) {
-      setNotes((prev) => [...prev, newNote.trim()]);
-      setNewNote("");
-    }
-  };
-
   const handleCopyInvite = () => {
     navigator.clipboard.writeText(`${window.location.origin}/meeting/${roomId}`);
-    toast.success("Invite link copied to clipboard!", {
+    toast.success("Meeting link copied to clipboard!", {
+      duration: 2500,
       style: {
-        background: "#ffffff",
-        color: "#142417",
-        border: "1px solid #d1fae5",
-        borderRadius: "9999px",
-        fontSize: "13px",
+        background: "#202124",
+        color: "#ffffff",
+        border: "1px solid #3c4043",
       },
-      iconTheme: { primary: "#4d7c0f", secondary: "#ffffff" },
     });
   };
 
@@ -126,128 +112,74 @@ const TranscriptPanel = ({
   );
 
   return (
-    <aside className="flex h-full w-full flex-col bg-[#0e1217] border-l border-zinc-800/90 text-zinc-100 shadow-2xl">
-      {/* ─── Panel Top Header ─── */}
-      <div className="flex items-center justify-between border-b border-zinc-900/80 px-5 py-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xs font-bold tracking-wider text-zinc-300 uppercase">
-            {activeTab === "participants" ? "People in Call" : activeTab}
-          </h2>
-          {activeTab === "participants" && (
-            <span className="rounded-full bg-zinc-900 border border-zinc-850 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-              {participants.length}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
+    <aside className="flex h-full w-full flex-col bg-[#202124] border-l border-[#3c4043] text-white shadow-xl">
+      {/* ─── Panel Header: Clean 2-Tab Navigation (People & Chat) ─── */}
+      <div className="flex items-center justify-between border-b border-[#3c4043] px-4 py-3 bg-[#202124]">
+        <div className="flex items-center gap-1 bg-[#282a2d] p-1 rounded-lg border border-[#3c4043]">
           <button
-            onClick={handleCopyInvite}
-            className="flex items-center gap-1.5 rounded-xl bg-zinc-900 border border-zinc-800 px-2.5 py-1 text-[10px] font-bold text-zinc-300 hover:text-white hover:bg-zinc-850 transition-all active:scale-95"
-            title="Invite more people"
+            onClick={() => setActiveTab("people")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+              activeTab === "people"
+                ? "bg-[#3c4043] text-white shadow-sm"
+                : "text-[#9aa0a6] hover:text-white"
+            }`}
           >
-            <UserPlus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Invite Link</span>
+            <Users className="h-3.5 w-3.5" />
+            <span>People ({participants.length})</span>
           </button>
 
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-xl border border-zinc-850 bg-zinc-900 text-zinc-400 hover:bg-zinc-850 hover:text-white transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* ─── Tab Segment Controls ─── */}
-      <div className="flex border-b border-zinc-900/80 bg-zinc-950 px-3 py-2.5">
-        <div className="grid w-full grid-cols-4 gap-1 rounded-2xl bg-zinc-900/40 p-1 border border-zinc-850/80">
           <button
             onClick={() => setActiveTab("chat")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
               activeTab === "chat"
-                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
+                ? "bg-[#3c4043] text-white shadow-sm"
+                : "text-[#9aa0a6] hover:text-white"
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5" />
             <span>Chat</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab("participants")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
-              activeTab === "participants"
-                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span>People</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("transcript")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
-              activeTab === "transcript"
-                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            <span>Summary</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("notes")}
-            className={`flex items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-semibold transition-all border ${
-              activeTab === "notes"
-                ? "bg-zinc-800 border-zinc-750 text-white shadow-sm"
-                : "border-transparent text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Notes</span>
-          </button>
         </div>
+
+        <button
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-[#9aa0a6] hover:text-white hover:bg-[#3c4043] transition-colors cursor-pointer"
+          title="Close panel"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       {/* ─── Scrollable Tab Content ─── */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* ─── 1. PARTICIPANTS TAB ─── */}
-        {activeTab === "participants" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                In this meeting ({filteredParticipants.length})
-              </span>
-            </div>
-
+        {/* ─── 1. PEOPLE TAB (VISIBLE TO ALL PARTICIPANTS) ─── */}
+        {activeTab === "people" && (
+          <div className="space-y-3">
             {/* Search Input */}
-            <div className="flex items-center gap-2 rounded-xl bg-zinc-950 border border-zinc-850 px-3 py-2 text-xs">
-              <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+            <div className="flex items-center gap-2 rounded-md bg-[#282a2d] border border-[#3c4043] px-3 py-2 text-xs">
+              <Search className="h-3.5 w-3.5 text-[#9aa0a6] shrink-0" />
               <input
                 type="text"
                 placeholder="Search participants..."
                 value={participantSearch}
                 onChange={(e) => setParticipantSearch(e.target.value)}
-                className="w-full bg-transparent text-white placeholder-zinc-500 outline-none text-xs"
+                className="w-full bg-transparent text-white placeholder-[#9aa0a6] outline-none text-xs"
               />
             </div>
 
-            {/* Host Screen Share Master Control Toggle */}
+            {/* Host Screen Share Master Control Toggle (HOST ONLY) */}
             {isHost && (
-              <div className="rounded-2xl bg-zinc-900/40 border border-zinc-850 p-3.5 flex items-center justify-between">
+              <div className="rounded-lg bg-[#282a2d] border border-[#3c4043] p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-lime-500/10 border border-lime-500/20 text-lime-400">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#3c4043] text-[#8ab4f8]">
                     <MonitorUp className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white">Allow anyone to share screen</div>
-                    <div className="text-[10px] text-zinc-400">
+                    <div className="text-xs font-medium text-white">Allow screen sharing</div>
+                    <div className="text-[11px] text-[#9aa0a6]">
                       {allScreenShareAllowed
-                        ? "All participants can share screen"
-                        : "Only permitted participants can share"}
+                        ? "Anyone can share their screen"
+                        : "Only permitted users can share"}
                     </div>
                   </div>
                 </div>
@@ -256,100 +188,92 @@ const TranscriptPanel = ({
                   onClick={() =>
                     onToggleAllScreenShare && onToggleAllScreenShare(!allScreenShareAllowed)
                   }
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                    allScreenShareAllowed ? "bg-lime-500" : "bg-zinc-800"
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                    allScreenShareAllowed ? "bg-[#1a73e8]" : "bg-[#3c4043]"
                   }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      allScreenShareAllowed ? "translate-x-5" : "translate-x-0"
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                      allScreenShareAllowed ? "translate-x-4" : "translate-x-0"
                     }`}
                   />
                 </button>
               </div>
             )}
 
-            {/* Direct Meeting Share Link Card */}
-            <div className="rounded-2xl bg-zinc-900/30 border border-zinc-850/80 p-4 shadow-sm relative overflow-hidden">
-              <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-emerald-500/3 blur-lg" />
-              <div className="relative z-10">
-                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
-                  <Sparkles className="h-3 w-3" />
-                  Direct Invite Link
+            {/* Meeting Link Share Card */}
+            <div className="rounded-lg bg-[#282a2d] border border-[#3c4043] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-medium text-[#9aa0a6]">
+                  Share meeting link
                 </span>
-                <p className="text-[11px] text-zinc-300/80 mb-3">
-                  Invite others to join this room directly by sharing this link:
-                </p>
-                <div className="flex items-center gap-1.5 rounded-xl bg-zinc-950 border border-zinc-850 px-2 py-1.5">
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${window.location.origin}/meeting/${roomId}`}
-                    className="w-full bg-transparent font-mono text-[10px] text-emerald-400 outline-none select-all cursor-text"
-                  />
-                  <button
-                    onClick={handleCopyInvite}
-                    className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-[10px] font-bold text-zinc-250 transition-all hover:bg-zinc-750 hover:text-white active:scale-95 shrink-0"
-                  >
-                    Copy
-                  </button>
-                </div>
+                <button
+                  onClick={handleCopyInvite}
+                  className="text-xs font-medium text-[#8ab4f8] hover:text-[#aecbfa] cursor-pointer"
+                >
+                  Copy Link
+                </button>
               </div>
+              <input
+                type="text"
+                readOnly
+                value={`${window.location.origin}/meeting/${roomId}`}
+                className="w-full rounded-md bg-[#202124] border border-[#3c4043] px-2.5 py-1.5 font-mono text-[11px] text-[#9aa0a6] select-all cursor-text outline-none"
+              />
             </div>
 
-            {/* Participants List Items */}
-            <div className="space-y-2">
+            {/* Participants List */}
+            <div className="space-y-1 pt-1">
+              <div className="text-[11px] font-medium text-[#9aa0a6] px-1 py-1">
+                In this meeting ({filteredParticipants.length})
+              </div>
+x
               {filteredParticipants.map((p) => (
                 <div
                   key={p.id}
-                  className="flex items-center justify-between rounded-xl bg-zinc-900/20 border border-zinc-850 p-3 transition-colors hover:border-zinc-800"
+                  className="flex items-center justify-between rounded-lg p-2.5 transition-colors hover:bg-[#282a2d]"
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="relative">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative shrink-0">
                       {p.avatar ? (
                         <img
                           src={p.avatar}
                           alt={p.name}
-                          className="h-8 w-8 rounded-full object-cover border border-zinc-800"
+                          className="h-8 w-8 rounded-full object-cover border border-[#3c4043]"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-zinc-300 border border-zinc-800">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#3c4043] text-xs font-medium text-white border border-[#5f6368]">
                           {getInitials(p.name)}
                         </div>
                       )}
-                      <span
-                        className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-[#0e1217] ${
-                          p.isMuted ? "bg-red-500" : "bg-emerald-400"
-                        }`}
-                      />
                     </div>
 
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-white tracking-tight">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="text-xs font-medium text-white truncate">
                           {p.name}
                         </span>
                         {p.isLocal && (
-                          <span className="text-[10px] text-emerald-400 font-medium">(You)</span>
+                          <span className="text-[11px] text-[#8ab4f8] font-normal">(You)</span>
                         )}
                       </div>
-                      <span className="text-[10px] text-zinc-400 font-medium capitalize">
+                      <span className="text-[11px] text-[#9aa0a6] capitalize">
                         {p.role}
                       </span>
                     </div>
                   </div>
 
-                  {/* Device & Screen Share Status Controls */}
-                  <div className="flex items-center gap-1.5">
-                    {/* Active Presenting Badge */}
+                  {/* Device Status & Controls */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Active Presenting Indicator */}
                     {p.isScreenSharing && (
-                      <span className="flex items-center gap-1 rounded-full bg-lime-500/20 border border-lime-500/30 px-2 py-0.5 text-[9px] font-bold text-lime-300 animate-pulse">
-                        <Monitor className="h-2.5 w-2.5" />
+                      <span className="flex items-center gap-1 rounded-md bg-[#282a2d] border border-[#3c4043] px-2 py-0.5 text-[10px] font-medium text-[#8ab4f8]">
+                        <Monitor className="h-3 w-3" />
                         <span>Presenting</span>
                       </span>
                     )}
 
-                    {/* Host action: Force stop screen share if presenting */}
+                    {/* Host action: Force stop screen share (HOST ONLY) */}
                     {isHost && !p.isLocal && p.isScreenSharing && (
                       <button
                         onClick={() =>
@@ -357,14 +281,14 @@ const TranscriptPanel = ({
                           onStopParticipantScreenShare &&
                           onStopParticipantScreenShare(p.socketId)
                         }
-                        className="rounded-lg bg-red-950/80 border border-red-700/60 hover:bg-red-900 px-2 py-1 text-[10px] font-bold text-red-200 hover:text-white transition-colors cursor-pointer"
+                        className="rounded-md bg-[#ea4335] hover:bg-[#d93025] px-2 py-1 text-[10px] font-medium text-white transition-colors cursor-pointer"
                         title="Stop this participant's screen share"
                       >
                         Stop
                       </button>
                     )}
 
-                    {/* Host action: Grant / Revoke Screen Share Permission */}
+                    {/* Host action: Grant / Revoke Screen Share Permission (HOST ONLY) */}
                     {isHost && !p.isLocal && p.role !== "host" && (
                       <button
                         onClick={() =>
@@ -375,58 +299,60 @@ const TranscriptPanel = ({
                             !p.canShareScreen
                           )
                         }
-                        className={`flex h-7 px-2 items-center gap-1 rounded-xl border text-[10px] font-semibold transition-all cursor-pointer ${
+                        className={`flex h-7 px-2 items-center gap-1 rounded-md border text-[10px] font-medium transition-colors cursor-pointer ${
                           p.canShareScreen
-                            ? "bg-lime-950/70 border-lime-700/60 text-lime-300 hover:bg-lime-900/60"
-                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-850 hover:text-white"
+                            ? "bg-[#282a2d] border-[#1a73e8] text-[#8ab4f8]"
+                            : "bg-[#282a2d] border-[#3c4043] text-[#9aa0a6] hover:text-white"
                         }`}
                         title={
                           p.canShareScreen
-                            ? "Click to revoke screen share permission"
-                            : "Click to grant screen share permission"
+                            ? "Revoke screen share permission"
+                            : "Grant screen share permission"
                         }
                       >
                         {p.canShareScreen ? (
                           <>
-                            <MonitorUp className="h-3 w-3 text-lime-400" />
+                            <MonitorUp className="h-3 w-3 text-[#8ab4f8]" />
                             <span className="hidden sm:inline">Allowed</span>
                           </>
                         ) : (
                           <>
-                            <MonitorOff className="h-3 w-3 text-zinc-500" />
+                            <MonitorOff className="h-3 w-3 text-[#9aa0a6]" />
                             <span className="hidden sm:inline">Allow</span>
                           </>
                         )}
                       </button>
                     )}
 
+                    {/* Mic Status Icon */}
                     <div
-                      className={`flex h-7 w-7 items-center justify-center rounded-xl border transition-colors ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-md ${
                         p.isMuted
-                          ? "bg-red-500/10 text-red-400 border-red-500/20"
-                          : "bg-zinc-900 text-zinc-400 border-zinc-800"
+                          ? "text-[#ea4335]"
+                          : "text-[#9aa0a6]"
                       }`}
-                      title={p.isMuted ? "Muted" : "Microphone active"}
+                      title={p.isMuted ? "Microphone muted" : "Microphone on"}
                     >
                       {p.isMuted ? (
                         <MicOff className="h-3.5 w-3.5" />
                       ) : (
-                        <Mic className="h-3.5 w-3.5 text-emerald-400" />
+                        <Mic className="h-3.5 w-3.5" />
                       )}
                     </div>
 
+                    {/* Camera Status Icon */}
                     <div
-                      className={`flex h-7 w-7 items-center justify-center rounded-xl border transition-colors ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-md ${
                         p.isCameraOff
-                          ? "bg-red-500/10 text-red-400 border-red-500/20"
-                          : "bg-zinc-900 text-zinc-400 border-zinc-800"
+                          ? "text-[#ea4335]"
+                          : "text-[#9aa0a6]"
                       }`}
-                      title={p.isCameraOff ? "Camera Off" : "Camera On"}
+                      title={p.isCameraOff ? "Camera off" : "Camera on"}
                     >
                       {p.isCameraOff ? (
                         <VideoOff className="h-3.5 w-3.5" />
                       ) : (
-                        <Video className="h-3.5 w-3.5 text-emerald-400" />
+                        <Video className="h-3.5 w-3.5" />
                       )}
                     </div>
                   </div>
@@ -441,8 +367,8 @@ const TranscriptPanel = ({
           <div className="flex h-full flex-col justify-between space-y-3">
             <div className="space-y-3">
               {messages.length === 0 ? (
-                <div className="py-12 text-center text-xs text-zinc-500">
-                  No messages yet. Send a message to participants in this room! 💬
+                <div className="py-16 text-center text-xs text-[#9aa0a6]">
+                  Messages sent here are visible to everyone in the call.
                 </div>
               ) : (
                 messages.map((msg) => {
@@ -453,10 +379,10 @@ const TranscriptPanel = ({
                       className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}
                     >
                       <div className="mb-1 flex items-center gap-2">
-                        <span className="text-[10px] font-semibold text-zinc-300">
+                        <span className="text-[11px] font-medium text-[#9aa0a6]">
                           {isOwn ? "You" : msg.senderName}
                         </span>
-                        <span className="text-[9px] text-zinc-500">
+                        <span className="text-[10px] text-[#5f6368]">
                           {new Date(msg.createdAt).toLocaleTimeString("en-US", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -465,10 +391,10 @@ const TranscriptPanel = ({
                         </span>
                       </div>
                       <div
-                        className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm border ${
+                        className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
                           isOwn
-                            ? "rounded-br-xs bg-zinc-850 border-zinc-700 text-white"
-                            : "rounded-bl-xs bg-zinc-900/50 border-zinc-850 text-zinc-200"
+                            ? "bg-[#1a73e8] text-white"
+                            : "bg-[#282a2d] border border-[#3c4043] text-white"
                         }`}
                       >
                         {msg.message}
@@ -480,82 +406,29 @@ const TranscriptPanel = ({
             </div>
           </div>
         )}
-
-        {/* ─── 3. SUMMARY TAB ─── */}
-        {activeTab === "transcript" && (
-          <div className="space-y-3">
-            <div className="rounded-2xl bg-zinc-900/40 border border-zinc-850/80 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-emerald-400" />
-                <h3 className="text-xs font-bold text-white">Live Call Status</h3>
-              </div>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Native WebRTC peer mesh active. Video streams, audio tracks, and real-time messages
-                are encrypted and streamed directly between connected browsers.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ─── 4. NOTES TAB ─── */}
-        {activeTab === "notes" && (
-          <div className="space-y-4">
-            <div className="rounded-2xl bg-zinc-900/40 border border-zinc-850 p-4">
-              <div className="mb-3 flex items-center gap-2 text-xs font-bold text-white">
-                <Sparkles className="h-4 w-4 text-emerald-400" />
-                Session Notes
-              </div>
-              <ul className="space-y-2 text-xs text-zinc-400">
-                {notes.map((note, index) => (
-                  <li key={index} className="flex items-start gap-2 leading-relaxed">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-                    <span>{note}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Add note input */}
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Add session note..."
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddNote()}
-                className="flex-1 rounded-xl bg-zinc-950 border border-zinc-850 px-3.5 py-2 text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-700"
-              />
-              <button
-                onClick={handleAddNote}
-                className="rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 hover:text-white"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ─── Bottom Chat Input (When on Chat tab) ─── */}
       {activeTab === "chat" && (
-        <div className="border-t border-zinc-900/80 bg-zinc-950/85 p-3">
+        <div className="border-t border-[#3c4043] bg-[#202124] p-3">
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Send message to everyone..."
+              placeholder="Send a message to everyone..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendChat()}
-              className="flex-1 rounded-xl bg-zinc-900 border border-zinc-850 px-4 py-2.5 text-xs text-white placeholder-zinc-500 outline-none focus:border-zinc-750 focus:ring-1 focus:ring-zinc-800/40"
+              className="flex-1 rounded-md bg-[#282a2d] border border-[#3c4043] px-3 py-2 text-xs text-white placeholder-[#9aa0a6] outline-none focus:border-[#8ab4f8]"
             />
             <button
               onClick={handleSendChat}
               disabled={!chatInput.trim()}
-              className={`flex h-9.5 w-9.5 shrink-0 items-center justify-center rounded-xl transition-all ${
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors ${
                 chatInput.trim()
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-zinc-950 active:scale-95 shadow-md"
-                  : "bg-zinc-900 text-zinc-600 border border-zinc-850 cursor-not-allowed"
+                  ? "bg-[#1a73e8] hover:bg-[#1557b0] text-white cursor-pointer"
+                  : "bg-[#282a2d] text-[#5f6368] cursor-not-allowed"
               }`}
+              title="Send message"
             >
               <Send className="h-3.5 w-3.5" />
             </button>

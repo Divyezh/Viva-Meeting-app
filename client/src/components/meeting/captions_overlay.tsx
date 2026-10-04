@@ -26,7 +26,7 @@ export const CaptionsOverlay = ({ caption, isVisible }: CaptionsOverlayProps) =>
             </span>
             {isTranslated && (
               <span className="flex items-center gap-1 rounded-md bg-white/5 border border-white/8 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300">
-                <Languages className="h-2.5 w-2.5 text-lime-400" />
+                <Languages className="h-2.5 w-2.5 text-[#34d399]" />
                 <span>
                   {caption.spokenLang.startsWith("hi") ? "Hindi" : caption.spokenLang} →{" "}
                   {caption.targetLang.toUpperCase()}
@@ -36,7 +36,7 @@ export const CaptionsOverlay = ({ caption, isVisible }: CaptionsOverlayProps) =>
           </div>
 
           <div className="flex items-center gap-1 text-[10px] text-zinc-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-lime-400 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
             <span>Subtitles</span>
           </div>
         </div>

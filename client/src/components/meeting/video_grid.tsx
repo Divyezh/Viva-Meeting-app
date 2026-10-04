@@ -82,11 +82,11 @@ const VideoGrid = ({
   // ─── 1. SPOTLIGHT PRESENTATION MODE ───
   if (isAnyScreenSharing) {
     return (
-      <div className="flex h-full w-full flex-col p-2 sm:p-4 pb-28 sm:pb-32 overflow-hidden gap-3">
+      <div className="flex h-full w-full flex-col p-3 sm:p-4 pb-24 sm:pb-28 overflow-hidden gap-3">
         {/* Presenter Status Bar */}
-        <div className="flex items-center justify-between px-2 shrink-0">
-          <div className="flex items-center gap-2 rounded-full bg-emerald-950/80 border border-emerald-500/40 px-3.5 py-1 text-xs font-semibold text-emerald-300 backdrop-blur-md shadow-md">
-            <Monitor className="h-3.5 w-3.5 text-lime-400 animate-pulse" />
+        <div className="flex items-center justify-between px-1 shrink-0">
+          <div className="flex items-center gap-2 rounded-full bg-[#202124] border border-[#3c4043] px-3.5 py-1 text-xs font-medium text-white shadow-sm">
+            <Monitor className="h-3.5 w-3.5 text-[#8ab4f8]" />
             <span>
               {isScreenSharing
                 ? "You are sharing your screen"
@@ -97,7 +97,7 @@ const VideoGrid = ({
           {isScreenSharing && onStopScreenShare && (
             <button
               onClick={onStopScreenShare}
-              className="flex items-center gap-1.5 rounded-full bg-red-600/90 hover:bg-red-600 px-3.5 py-1 text-xs font-bold text-white shadow-md active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-full bg-[#ea4335] hover:bg-[#d93025] px-3.5 py-1 text-xs font-medium text-white shadow-sm active:scale-95 transition-all cursor-pointer"
             >
               <StopCircle className="h-3.5 w-3.5" />
               <span>Stop Presenting</span>
@@ -106,7 +106,7 @@ const VideoGrid = ({
         </div>
 
         {/* Main Stage: Presenter Screen Tile */}
-        <div className="relative flex-1 w-full min-h-0 rounded-3xl overflow-hidden shadow-2xl border border-emerald-900/40 bg-[#081307]">
+        <div className="relative flex-1 w-full min-h-0 rounded-xl overflow-hidden shadow-md border border-[#3c4043] bg-[#202124]">
           {isScreenSharing ? (
             <VideoTile
               userName={localUser.userName}
@@ -137,7 +137,7 @@ const VideoGrid = ({
         <div className="flex items-center gap-2.5 overflow-x-auto py-1 px-1 shrink-0 h-32 sm:h-36 scrollbar-thin">
           {/* If presenter is a peer, render local user in filmstrip */}
           {!isScreenSharing && (
-            <div className="h-full w-44 sm:w-52 shrink-0 animate-tile-in transition-all duration-300 ease-out">
+            <div className="h-full w-44 sm:w-52 shrink-0 animate-tile-in transition-all duration-200 ease-out">
               <VideoTile
                 userName={localUser.userName}
                 isMuted={localUser.isMuted}
@@ -155,7 +155,7 @@ const VideoGrid = ({
           {uniquePeers
             .filter((p) => p.peerId !== presenterPeer?.peerId)
             .map((peer) => (
-              <div key={peer.peerId} className="h-full w-44 sm:w-52 shrink-0 animate-tile-in transition-all duration-300 ease-out">
+              <div key={peer.peerId} className="h-full w-44 sm:w-52 shrink-0 animate-tile-in transition-all duration-200 ease-out">
                 <VideoTile
                   userName={peer.userName}
                   isMuted={peer.isMuted}
@@ -174,11 +174,11 @@ const VideoGrid = ({
 
   // ─── 2. STANDARD BALANCED GRID MODE (OPTIMIZED FOR UP TO 8 PARTICIPANTS) ───
   return (
-    <div className="flex h-full w-full items-center justify-center p-2 sm:p-4 pb-28 sm:pb-32 overflow-hidden">
-      <div className={`grid h-full w-full gap-2 sm:gap-3.5 auto-rows-fr place-items-center items-center justify-center transition-all duration-300 ease-out ${getGridClasses()}`}>
+    <div className="flex h-full w-full items-center justify-center p-3 sm:p-4 pb-24 sm:pb-28 overflow-hidden">
+      <div className={`grid h-full w-full gap-3 sm:gap-4 auto-rows-fr place-items-center items-center justify-center transition-all duration-200 ease-out ${getGridClasses()}`}>
         {/* Remote Connected Peer Tiles (Deduplicated) */}
         {uniquePeers.map((peer) => (
-          <div key={peer.peerId} className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center animate-tile-in transition-all duration-300 ease-out">
+          <div key={peer.peerId} className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center animate-tile-in transition-all duration-200 ease-out">
             <VideoTile
               userName={peer.userName}
               isMuted={peer.isMuted}
@@ -192,7 +192,7 @@ const VideoGrid = ({
         ))}
 
         {/* Local User Tile */}
-        <div className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center animate-tile-in transition-all duration-300 ease-out">
+        <div className="min-h-0 min-w-0 h-full w-full aspect-video flex items-center justify-center animate-tile-in transition-all duration-200 ease-out">
           <VideoTile
             userName={localUser.userName}
             isMuted={localUser.isMuted}

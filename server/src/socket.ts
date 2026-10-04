@@ -62,8 +62,8 @@ export const setupSocket = (server: HttpServer): Server => {
       credentials: true,
     },
     transports: ["websocket", "polling"],
-    pingTimeout: 10000,
-    pingInterval: 10000,
+    pingTimeout: 30000,
+    pingInterval: 25000,
   });
 
   io.on("connection", (socket: Socket) => {
@@ -1055,7 +1055,13 @@ export const setupSocket = (server: HttpServer): Server => {
     };
 
     socket.on("leave-room", handleLeave);
-    socket.on("disconnect", handleLeave);
+    socket.on("disconnect", (reason: string) => {
+      const userMeta = socketToRoom.get(socket.id);
+      console.log(
+        `[Socket Disconnected] Socket ${socket.id} (user: "${userMeta?.userName || "unknown"}", room: "${userMeta?.roomId || "none"}") disconnected. Reason: "${reason}"`
+      );
+      leaveCurrentRoom();
+    });
   });
 
   return io;

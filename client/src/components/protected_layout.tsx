@@ -11,7 +11,7 @@ const ProtectedLayout = () => {
   }
 
   return (
-    <div className="bg-viva-shader flex min-h-screen flex-col selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="bg-[#1a1a1a] text-[#f3f4f6] flex min-h-screen flex-col selection:bg-[#10b981]/30 selection:text-white">
       <Navbar />
       <main className="flex-1 flex flex-col justify-center">
         <Outlet />

@@ -7,9 +7,7 @@ import {
   MessageSquare,
   Users,
   PhoneOff,
-  FileText,
   Smile,
-  Circle,
   Lock,
   Subtitles,
   Languages,
@@ -49,7 +47,6 @@ const ControlBar = ({
   isScreenSharing,
   canShareScreen = false,
   isChatOpen,
-  isTranscriptOpen = true,
   isParticipantsOpen,
   isCaptionsEnabled = false,
   unreadCount,
@@ -60,44 +57,13 @@ const ControlBar = ({
   onToggleScreenShare,
   onRequestScreenSharePermission,
   onToggleChat,
-  onToggleTranscript,
   onToggleParticipants,
   onToggleCaptions,
   onOpenCaptionsModal,
   onSendReaction,
   onLeaveMeeting,
 }: ControlBarProps) => {
-  const [isRecording, setIsRecording] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
-
-  const handleToggleRecord = () => {
-    setIsRecording((prev) => {
-      const next = !prev;
-      if (next) {
-        toast.success("Meeting recording started (HD Cloud)", {
-          style: {
-            background: "#ffffff",
-            color: "#142417",
-            border: "1px solid #d1fae5",
-            borderRadius: "9999px",
-            fontSize: "13px",
-          },
-          iconTheme: { primary: "#ef4444", secondary: "#ffffff" },
-        });
-      } else {
-        toast("Meeting recording saved to cloud", {
-          icon: "💾",
-          style: {
-            background: "#ffffff",
-            color: "#142417",
-            borderRadius: "9999px",
-            fontSize: "13px",
-          },
-        });
-      }
-      return next;
-    });
-  };
 
   const handleSendReaction = (emoji: string) => {
     if (onSendReaction) {
@@ -107,15 +73,15 @@ const ControlBar = ({
   };
 
   return (
-    <div className="fixed bottom-2.5 sm:bottom-6 left-1/2 z-40 -translate-x-1/2 max-w-[98vw] px-1 pointer-events-auto">
+    <div className="fixed bottom-3 sm:bottom-6 left-1/2 z-40 -translate-x-1/2 max-w-[98vw] px-1 pointer-events-auto">
       {/* Reactions Floating Popup Menu */}
       {showReactions && (
-        <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 rounded-full bg-[#081307]/95 border border-emerald-800/60 px-3 py-1.5 backdrop-blur-xl shadow-2xl animate-fade-in z-50">
+        <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex items-center gap-1 sm:gap-1.5 rounded-full bg-[#202124] border border-[#3c4043] px-3 py-1.5 shadow-2xl animate-fade-in z-50">
           {["👍", "❤️", "👏", "🎉", "🔥", "🚀", "🙌", "😂", "😮", "🤝"].map((emoji) => (
             <button
               key={emoji}
               onClick={() => handleSendReaction(emoji)}
-              className="text-lg sm:text-xl transition-transform hover:scale-135 active:scale-90 cursor-pointer p-1"
+              className="text-lg sm:text-xl transition-transform hover:scale-125 active:scale-95 cursor-pointer p-1"
             >
               {emoji}
             </button>
@@ -123,56 +89,43 @@ const ControlBar = ({
         </div>
       )}
 
-      {/* Main Floating Controls Pill */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 rounded-full bg-[#081307]/85 border border-emerald-900/40 p-2 sm:px-4 sm:py-2.5 backdrop-blur-2xl shadow-2xl shadow-black/60">
-        {/* 1. Record Button */}
-        <button
-          onClick={handleToggleRecord}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isRecording
-            ? "bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse"
-            : "bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-            }`}
-          title={isRecording ? "Stop Recording" : "Record Meeting"}
-        >
-          <Circle
-            className={`h-4 w-4 ${isRecording ? "fill-red-500 text-red-500" : "fill-emerald-400/80 text-emerald-400/80"
-              }`}
-          />
-        </button>
-
-        {/* 2. Microphone Toggle */}
+      {/* Main Floating Controls Pill: Google Meet / Zoom style neutral dark dock */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5 rounded-full bg-[#202124] border border-[#3c4043] p-1.5 sm:px-3 sm:py-2 shadow-xl shadow-black/40">
+        {/* 1. Microphone Toggle */}
         <button
           onClick={onToggleMute}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isMuted
-            ? "bg-red-500/90 text-white shadow-md shadow-red-900/30"
-            : "bg-[#142817] text-white border border-emerald-700/50 hover:bg-[#1e3a22] hover:border-lime-500/50"
-            }`}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+            isMuted
+              ? "bg-[#ea4335] text-white hover:bg-[#d93025]"
+              : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
+          }`}
           title={isMuted ? "Unmute Microphone" : "Mute Microphone"}
         >
           {isMuted ? (
             <MicOff className="h-4.5 w-4.5" />
           ) : (
-            <Mic className="h-4.5 w-4.5 text-[#a3e635]" />
+            <Mic className="h-4.5 w-4.5" />
           )}
         </button>
 
-        {/* 3. Camera Toggle */}
+        {/* 2. Camera Toggle */}
         <button
           onClick={onToggleCamera}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isCameraOff
-            ? "bg-red-500/90 text-white shadow-md shadow-red-900/30"
-            : "bg-[#142817] text-white border border-emerald-700/50 hover:bg-[#1e3a22] hover:border-lime-500/50"
-            }`}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+            isCameraOff
+              ? "bg-[#ea4335] text-white hover:bg-[#d93025]"
+              : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
+          }`}
           title={isCameraOff ? "Turn on camera" : "Turn off camera"}
         >
           {isCameraOff ? (
             <VideoOff className="h-4.5 w-4.5" />
           ) : (
-            <Video className="h-4.5 w-4.5 text-[#a3e635]" />
+            <Video className="h-4.5 w-4.5" />
           )}
         </button>
 
-        {/* 4. Screen Share Toggle */}
+        {/* 3. Screen Share Toggle */}
         <button
           onClick={() => {
             if (isScreenSharing) {
@@ -185,12 +138,11 @@ const ControlBar = ({
               toast.error("Screen sharing permission required from the host.");
             }
           }}
-          className={`relative hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isScreenSharing
-            ? "bg-[#3f6212] text-white border border-lime-400 shadow-md shadow-lime-900/30"
-            : !isHost && !canShareScreen
-              ? "bg-emerald-950/40 text-emerald-400/60 border border-emerald-900/40 hover:bg-emerald-900/40 hover:text-emerald-200"
-              : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-            }`}
+          className={`relative hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+            isScreenSharing
+              ? "bg-[#8ab4f8] text-[#202124] hover:bg-[#aecbfa]"
+              : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
+          }`}
           title={
             isScreenSharing
               ? "Stop Sharing Screen"
@@ -202,117 +154,95 @@ const ControlBar = ({
           <MonitorUp className="h-4.5 w-4.5" />
           {!isHost && !canShareScreen && !isScreenSharing && (
             <span
-              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500/90 text-slate-950 shadow-xs"
+              className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-slate-950"
               title="Permission required"
             >
-              <Lock className="h-2 w-2 text-slate-950 stroke-3
-            " />
+              <Lock className="h-2 w-2 text-slate-950 stroke-3" />
             </span>
           )}
         </button>
 
-        {/* 5. End Call Pill (Prominent Red) */}
-        <button
-          onClick={onLeaveMeeting}
-          className="flex h-10 sm:h-11 items-center gap-2 rounded-full bg-red-600 px-4 sm:px-5 font-bold text-white shadow-lg shadow-red-950/50 transition-all hover:bg-red-700 active:scale-95 text-xs sm:text-sm"
-          title="Leave Call"
-        >
-          <PhoneOff className="h-4 w-4" />
-          <span className="hidden sm:inline">End Call</span>
-        </button>
-
-        {/* 6. Transcript Toggle */}
-        {onToggleTranscript && (
+        {/* 4. Live Captions (CC) Toggle */}
+        {onToggleCaptions && (
           <button
-            onClick={onToggleTranscript}
-            className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isTranscriptOpen
-              ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
-              : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-              }`}
-            title="Toggle Live Transcript & Notes"
+            onClick={onToggleCaptions}
+            className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+              isCaptionsEnabled
+                ? "bg-[#8ab4f8] text-[#202124] hover:bg-[#aecbfa]"
+                : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
+            }`}
+            title={isCaptionsEnabled ? "Turn off Live Captions" : "Turn on Live Captions"}
           >
-            <FileText className="h-4.5 w-4.5" />
+            <Subtitles className="h-4.5 w-4.5" />
           </button>
         )}
 
-        {/* 7. Chat Toggle */}
+        {/* 5. Captions Language Settings Modal Trigger */}
+        {onOpenCaptionsModal && (
+          <button
+            onClick={onOpenCaptionsModal}
+            className="hidden sm:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-[#3c4043] text-white hover:bg-[#474a4d] transition-colors cursor-pointer"
+            title="Captions & Translation Settings"
+          >
+            <Languages className="h-4.5 w-4.5" />
+          </button>
+        )}
+
+        {/* 6. Reactions Toggle */}
+        <button
+          onClick={() => setShowReactions(!showReactions)}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+            showReactions
+              ? "bg-[#8ab4f8] text-[#202124]"
+              : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
+          }`}
+          title="Reactions"
+        >
+          <Smile className="h-4.5 w-4.5" />
+        </button>
+
+        {/* 7. In-Meeting Chat Toggle */}
         <button
           onClick={onToggleChat}
-          className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all ${isChatOpen
-            ? "bg-[#3f6212] text-white border border-lime-400/50 shadow-md shadow-lime-950/30"
-            : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-            }`}
+          className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+            isChatOpen
+              ? "bg-[#8ab4f8] text-[#202124] hover:bg-[#aecbfa]"
+              : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
+          }`}
           title="In-meeting Chat"
         >
           <MessageSquare className="h-4.5 w-4.5" />
           {unreadCount > 0 && !isChatOpen && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#84cc16] px-1 text-[9px] font-extrabold text-slate-950">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-bold text-white">
               {unreadCount}
             </span>
           )}
         </button>
 
-        {/* 8. Live Captions (CC) Toggle */}
-        {onToggleCaptions && (
-          <div className="relative flex items-center">
-            <button
-              onClick={onToggleCaptions}
-              className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all cursor-pointer ${
-                isCaptionsEnabled
-                  ? "bg-[#3f6212] text-white border border-lime-400 shadow-md shadow-lime-950/40"
-                  : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-              }`}
-              title={isCaptionsEnabled ? "Turn off Live Captions (CC)" : "Turn on Live Captions (CC)"}
-            >
-              <Subtitles className="h-4.5 w-4.5" />
-            </button>
-            {isCaptionsEnabled && (
-              <span className="absolute -top-1 -right-0.5 flex h-3 w-3 pointer-events-none">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#84cc16]"></span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* 9. Captions Language Settings Modal Trigger */}
-        {onOpenCaptionsModal && (
-          <button
-            onClick={onOpenCaptionsModal}
-            className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white transition-all cursor-pointer"
-            title="Captions & Language Settings (Hindi to English Translation)"
-          >
-            <Languages className="h-4.5 w-4.5 text-lime-400" />
-          </button>
-        )}
-
-        {/* 10. Reactions Toggle */}
-        <button
-          onClick={() => setShowReactions(!showReactions)}
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all cursor-pointer ${
-            showReactions
-              ? "bg-[#3f6212] text-white border border-lime-400/50"
-              : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
-          }`}
-          title="Reactions (Send emojis to screen)"
-        >
-          <Smile className="h-4.5 w-4.5" />
-        </button>
-
-        {/* 11. Participants List */}
+        {/* 8. Participants (Visible to EVERYONE - guest & host) */}
         <button
           onClick={onToggleParticipants}
-          className={`relative hidden md:flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-all cursor-pointer ${
+          className={`relative flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
             isParticipantsOpen
-              ? "bg-[#3f6212] text-white border border-lime-400/50"
-              : "bg-emerald-950/60 text-emerald-200 border border-emerald-800/40 hover:bg-emerald-900/50 hover:text-white"
+              ? "bg-[#8ab4f8] text-[#202124] hover:bg-[#aecbfa]"
+              : "bg-[#3c4043] text-white hover:bg-[#474a4d]"
           }`}
-          title="Participants"
+          title={`Participants (${participantCount})`}
         >
           <Users className="h-4.5 w-4.5" />
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-700 px-1 text-[9px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1a73e8] px-1 text-[9px] font-medium text-white">
             {participantCount}
           </span>
+        </button>
+
+        {/* 9. End Call Button (The ONLY red/warning button in the dock) */}
+        <button
+          onClick={onLeaveMeeting}
+          className="flex h-10 sm:h-11 items-center gap-2 rounded-full bg-[#ea4335] hover:bg-[#d93025] px-4 sm:px-5 font-medium text-white shadow-sm transition-colors active:scale-95 text-xs sm:text-sm cursor-pointer ml-1"
+          title="Leave Meeting"
+        >
+          <PhoneOff className="h-4 w-4" />
+          <span className="hidden sm:inline">Leave</span>
         </button>
       </div>
     </div>

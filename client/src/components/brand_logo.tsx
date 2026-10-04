@@ -8,11 +8,11 @@ export interface BrandLogoProps extends React.SVGProps<SVGSVGElement> {
 
 /**
  * BrandLogo: Official Viva Meeting Group Meeting SVG Logo
- * Matches the website's signature olive green palette (#4d7c0f).
+ * Matches the website's signature charcoal & sage emerald accent (#10b981).
  */
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size,
-  color = "#4d7c0f",
+  color = "#10b981",
   className = "h-6 w-6",
   style,
   ...props

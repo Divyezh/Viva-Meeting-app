@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, ChevronDown } from "lucide-react";
+import { Copy, Check, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import BrandLogo from "../brand_logo";
@@ -17,10 +17,8 @@ interface MeetingHeaderProps {
 const MeetingHeader = ({
   roomId,
   meetingTitle = "Product Sync & Standup",
-  hostName = "Divyesh Soni",
-  hostAvatar,
+  hostName,
   participantCount = 1,
-  participants = [],
   onToggleParticipants,
 }: MeetingHeaderProps) => {
   const [copied, setCopied] = useState(false);
@@ -40,135 +38,76 @@ const MeetingHeader = ({
     toast.success("Meeting link copied to clipboard!", {
       duration: 3000,
       style: {
-        background: "#081307",
+        background: "#202124",
         color: "#ffffff",
-        border: "1px solid rgba(74, 222, 128, 0.3)",
+        border: "1px solid #3c4043",
       },
     });
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(roomId);
-    toast.success(`Meeting code "${roomId}" copied!`, {
-      duration: 2500,
-      style: {
-        background: "#081307",
-        color: "#ffffff",
-        border: "1px solid rgba(74, 222, 128, 0.3)",
-      },
-    });
-  };
-
-  const getInitials = (name: string) => {
-    if (!name) return "U";
-    return name
-      .trim()
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
-    <header className="relative z-20 flex h-16 w-full items-center justify-between px-4 sm:px-6 bg-[#081307]/90 backdrop-blur-xl border-b border-emerald-900/30">
+    <header className="relative z-20 flex h-14 sm:h-16 w-full items-center justify-between px-3 sm:px-6 bg-[#202124] border-b border-[#3c4043]">
       {/* ─── Left Section: Logo & Meeting Title ─── */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         <Link
           to="/"
           title="Back to Dashboard"
-          className="flex items-center gap-2 group transition-transform hover:scale-105"
+          className="flex items-center gap-2 group shrink-0"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-950/80 border border-emerald-700/40 shadow-md shadow-black/40 group-hover:border-emerald-500/60">
-            <BrandLogo className="h-5.5 w-5.5" color="#84cc16" />
+          <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-[#2d2f34] border border-[#3c4043] shadow-sm group-hover:border-[#5f6368] transition-colors">
+            <BrandLogo className="h-5 w-5" color="#ffffff" />
           </div>
-          <span className="hidden text-lg font-bold tracking-tight text-white sm:inline-block">
-            VIVA<span className="text-[#84cc16]">.</span>
+          <span className="hidden text-base font-semibold tracking-tight text-white sm:inline-block">
+            VIVA
           </span>
         </Link>
 
-        <div className="h-6 w-px bg-emerald-800/40 hidden sm:block" />
+        <div className="h-5 w-px bg-[#3c4043] hidden sm:block shrink-0" />
 
-        <div>
-          <h1 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
-            {meetingTitle}
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#84cc16]"></span>
-            </span>
+        <div className="min-w-0">
+          <h1 className="text-xs sm:text-sm font-medium text-white tracking-tight truncate flex items-center gap-2">
+            <span>{meetingTitle}</span>
+            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" title="Active Meeting" />
           </h1>
-          <p className="text-[11px] text-emerald-200/60 font-medium font-mono">
-            ID: {roomId} · {formattedDate}
+          <p className="text-[11px] text-[#9aa0a6] font-mono truncate">
+            {roomId} <span className="hidden md:inline">· {formattedDate}</span>
           </p>
         </div>
       </div>
 
-      {/* ─── Center Section: Host Pill & Participants Stack ─── */}
-      <div className="hidden lg:flex items-center gap-3">
-        {/* Host Pill */}
-        <div className="flex items-center gap-2 rounded-full bg-emerald-950/50 border border-emerald-800/40 py-1 pl-1.5 pr-3 text-xs text-emerald-100 shadow-sm">
-          {hostAvatar ? (
-            <img
-              src={hostAvatar}
-              alt={hostName}
-              className="h-6 w-6 rounded-full object-cover border border-lime-400/40"
-            />
-          ) : (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-bold text-emerald-200 border border-lime-400/40">
-              {getInitials(hostName)}
-            </div>
-          )}
-          <span className="text-emerald-300/70 text-[11px]">Host:</span>
-          <span className="font-semibold text-white text-xs">{hostName}</span>
-        </div>
-
-        {/* Participants Pill */}
+      {/* ─── Center/Right Section: Live Participant Count (Visible to ALL participants) & Copy Link ─── */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Live Participant Count Pill: Clickable by EVERY participant to open People panel */}
         <button
           onClick={onToggleParticipants}
-          className="flex items-center gap-2 rounded-full bg-emerald-950/50 border border-emerald-800/40 py-1 pl-2 pr-3 text-xs text-emerald-100 shadow-sm transition-colors hover:bg-emerald-900/40 hover:border-emerald-700/50"
+          className="flex items-center gap-1.5 sm:gap-2 rounded-md bg-[#2d2f34] hover:bg-[#3c4043] border border-[#3c4043] px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white transition-colors cursor-pointer"
+          title="View all participants in this call"
         >
-          {/* Overlapping Initials Stack */}
-          <div className="flex -space-x-1.5 overflow-hidden">
-            {participants.slice(0, 3).map((p, i) => (
-              <div
-                key={p.id || i}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-900 text-[10px] font-bold text-emerald-200 ring-2 ring-[#081307] border border-emerald-700/50"
-                title={p.name}
-              >
-                {getInitials(p.name)}
-              </div>
-            ))}
-          </div>
-          <span className="font-semibold text-xs text-white">
-            {participantCount} {participantCount === 1 ? "Participant" : "Participants"}
+          <Users className="h-3.5 w-3.5 text-[#8ab4f8]" />
+          <span className="font-medium text-white">
+            {participantCount}
           </span>
-          <ChevronDown className="h-3.5 w-3.5 text-emerald-300/70" />
+          <span className="hidden md:inline text-[#9aa0a6]">
+            {participantCount === 1 ? "participant" : "participants"}
+          </span>
         </button>
-      </div>
 
-      {/* ─── Right Section: Clean Copy Meeting ID & Invite Pill ─── */}
-      <div className="flex items-center gap-2.5">
+        {/* Copy Meeting Link Pill */}
         <button
           onClick={handleCopyLink}
-          className="flex items-center gap-2 rounded-full bg-emerald-950/70 border border-emerald-800/60 px-3.5 py-1.5 text-xs font-semibold text-emerald-200 transition-all hover:bg-[#3f6212] hover:text-white hover:border-lime-500/50 active:scale-95 shadow-sm"
+          className="flex items-center gap-1.5 rounded-md bg-[#2d2f34] hover:bg-[#3c4043] border border-[#3c4043] px-2.5 sm:px-3 py-1.5 text-xs font-medium text-white transition-colors active:scale-95 cursor-pointer shadow-sm"
           title="Copy meeting link to share with others"
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-lime-400" />
-              <span className="text-lime-300">Link Copied!</span>
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="text-emerald-400 hidden sm:inline">Copied!</span>
             </>
           ) : (
             <>
-              <Copy className="h-3.5 w-3.5 text-[#84cc16]" />
-              <span className="font-mono text-[11px] text-emerald-100 hidden sm:inline-block">
-                {roomId}
-              </span>
-              <span className="text-[11px] text-emerald-400/80 hidden sm:inline-block">
-                · Copy Link
-              </span>
-              <span className="inline-block sm:hidden text-[11px]">Copy Link</span>
+              <Copy className="h-3.5 w-3.5 text-[#9aa0a6]" />
+              <span className="hidden sm:inline">Copy Link</span>
             </>
           )}
         </button>

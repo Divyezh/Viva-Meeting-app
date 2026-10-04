@@ -145,7 +145,7 @@ const Sessions = () => {
         <div className="mb-6 flex items-center justify-between">
           <Link
             to="/"
-            className="group inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-slate-800"
+            className="group inline-flex items-center gap-1.5 text-xs font-medium text-[#9ca3af] transition-colors hover:text-white"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
             Go to Dashboard
@@ -153,7 +153,7 @@ const Sessions = () => {
 
           <button
             onClick={() => setIsNewMeetingModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#3f6212] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#365314] active:scale-95 transition-all"
+            className="inline-flex items-center gap-2 rounded-full bg-[#10b981] hover:bg-[#059669] px-4 py-2 text-xs font-medium text-white shadow-sm active:scale-95 transition-all cursor-pointer"
           >
             <Plus className="h-3.5 w-3.5" />
             New Meeting
@@ -162,24 +162,24 @@ const Sessions = () => {
 
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Meeting sessions.
           </h1>
-          <p className="max-w-xl text-sm text-slate-500 sm:text-base">
+          <p className="max-w-xl text-sm text-[#9ca3af] sm:text-base">
             Review your past and active meeting history, participant logs, and chat transcripts.
           </p>
         </div>
 
         {/* Session Cards Grid */}
         {sessions.length === 0 ? (
-          <div className="glass-panel flex flex-col items-center justify-center rounded-3xl py-16 px-4 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-[#4d7c0f]">
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-[#242424] border border-[#383838] py-16 px-4 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#2a2a2a] border border-[#383838] text-[#10b981]">
               <History className="h-8 w-8" />
             </div>
-            <h3 className="mb-1 text-base font-bold text-slate-900">
+            <h3 className="mb-1 text-base font-bold text-white">
               {isLoading ? "Synchronizing sessions..." : "No sessions recorded yet"}
             </h3>
-            <p className="max-w-xs text-xs text-slate-400 mb-6">
+            <p className="max-w-xs text-xs text-[#9ca3af] mb-6">
               {isLoading
                 ? "Checking server database for your meetings history..."
                 : "Your meeting history will appear here once you host or join your first video call."}
@@ -187,7 +187,7 @@ const Sessions = () => {
             {!isLoading && (
               <button
                 onClick={() => setIsNewMeetingModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#3f6212] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#365314] active:scale-95 transition-all"
+                className="inline-flex items-center gap-2 rounded-full bg-[#10b981] hover:bg-[#059669] px-5 py-2.5 text-xs font-medium text-white shadow-md active:scale-95 transition-all cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
                 Start a New Meeting
@@ -241,33 +241,33 @@ const SessionCard = ({
   const shortId = session.id.split("-").slice(0, 3).join("-").slice(0, 11);
 
   return (
-    <div className="glass-panel group flex flex-col justify-between rounded-2xl p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-900/5">
+    <div className="group flex flex-col justify-between rounded-2xl bg-[#242424] border border-[#383838] p-5 transition-all duration-150 hover:border-[#4a4a4a]">
       <div>
         {/* Top: ID Badge + Status Badge */}
         <div className="mb-3.5 flex items-center justify-between">
-          <span className="rounded-full bg-emerald-50/80 border border-emerald-100/60 px-2.5 py-1 font-mono text-[10px] font-medium text-slate-600">
+          <span className="rounded-md bg-[#1e1e1e] border border-[#383838] px-2.5 py-1 font-mono text-[10px] font-medium text-[#9ca3af]">
             ID: {shortId}
           </span>
           <span
-            className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${
               session.status === "active"
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-slate-100 text-slate-500"
+                ? "bg-[#10b981]/20 text-[#34d399] border border-[#10b981]/40"
+                : "bg-[#2a2a2a] text-[#9ca3af]"
             }`}
           >
             {session.status === "active" && (
-              <span className="h-1.5 w-1.5 rounded-full bg-[#4d7c0f] animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
             )}
             {session.status === "active" ? "Live" : "Ended"}
           </span>
         </div>
 
         {/* Title */}
-        <h3 className="mb-1.5 truncate text-base font-bold text-slate-900">{session.title}</h3>
+        <h3 className="mb-1.5 truncate text-base font-bold text-white">{session.title}</h3>
 
         {/* Date/Time */}
-        <div className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
-          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+        <div className="mb-4 flex items-center gap-1.5 text-xs text-[#9ca3af]">
+          <Calendar className="h-3.5 w-3.5 text-[#9ca3af]" />
           <span>
             {formatDate(session.createdAt)} · {formatTime(session.createdAt)}
           </span>
@@ -275,13 +275,13 @@ const SessionCard = ({
 
         {/* Two Stat Chips Side by Side */}
         <div className="mb-5 flex items-center gap-2">
-          <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-50/40 border border-emerald-100/60 py-2 text-xs font-semibold text-slate-700">
-            <Users className="h-3.5 w-3.5 text-[#4d7c0f]" />
+          <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1e1e1e] border border-[#383838] py-2 text-xs font-medium text-[#d1d5db]">
+            <Users className="h-3.5 w-3.5 text-[#10b981]" />
             <span>{session.participantCount} Participants</span>
           </div>
-          <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-50/40 border border-emerald-100/60 py-2 text-xs font-semibold text-slate-700">
-            <MessageSquare className="h-3.5 w-3.5 text-[#4d7c0f]" />
-            <span>6 Messages</span>
+          <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1e1e1e] border border-[#383838] py-2 text-xs font-medium text-[#d1d5db]">
+            <MessageSquare className="h-3.5 w-3.5 text-[#10b981]" />
+            <span>Messages</span>
           </div>
         </div>
       </div>
@@ -290,16 +290,16 @@ const SessionCard = ({
       <div className="flex items-center gap-2 mt-2">
         <button
           onClick={onViewDetails}
-          className="flex-1 rounded-full bg-emerald-50/80 border border-emerald-100/60 py-2.5 text-xs font-semibold text-slate-700 transition-all hover:bg-[#3f6212] hover:text-white active:scale-95"
+          className="flex-1 rounded-full bg-[#2a2a2a] hover:bg-[#333333] border border-[#383838] py-2 text-xs font-medium text-white transition-colors cursor-pointer"
         >
           View Details
         </button>
         <button
           onClick={onDelete}
-          className="flex h-9.5 w-9.5 items-center justify-center rounded-full bg-red-50 border border-red-100 text-red-600 transition-all hover:bg-red-600 hover:text-white active:scale-95"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2a2a2a] border border-[#383838] text-[#ea4335] hover:bg-[#ea4335] hover:text-white transition-colors cursor-pointer"
           title="Delete Session"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

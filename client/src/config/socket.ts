@@ -8,9 +8,21 @@ export const socket = io(SOCKET_URL, {
   transports: ["websocket", "polling"],
   reconnection: true,
   reconnectionAttempts: Infinity,
-  reconnectionDelay: 400,
-  reconnectionDelayMax: 1500,
-  timeout: 10000,
+  reconnectionDelay: 500,
+  reconnectionDelayMax: 2000,
+  timeout: 30000,
+});
+
+socket.on("connect", () => {
+  console.log(`[Socket Connected] Successfully connected to signaling server (${socket.id})`);
+});
+
+socket.on("disconnect", (reason) => {
+  console.warn(`[Socket Disconnected] Disconnected from signaling server. Reason: "${reason}"`);
+});
+
+socket.on("connect_error", (err) => {
+  console.error(`[Socket Connect Error] Failed to connect to signaling server:`, err.message);
 });
 
 export default socket;

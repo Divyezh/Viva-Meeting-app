@@ -37,35 +37,35 @@ const Pricing = () => {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Upgrade your <span className="text-[#4d7c0f]">plan.</span>
+          <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            Upgrade your <span className="text-[#10b981]">plan.</span>
           </h1>
-          <p className="mx-auto max-w-lg text-sm text-slate-600 sm:text-base">
+          <p className="mx-auto max-w-lg text-sm text-[#9ca3af] sm:text-base">
             Choose the plan that's right for you and unlock all the features of Viva Meeting.
           </p>
 
           {/* Annual Toggle */}
-          <div className="mt-6 inline-flex items-center gap-3 rounded-full bg-emerald-50/80 border border-emerald-100/70 p-1 text-xs font-semibold">
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#242424] border border-[#383838] p-1 text-xs font-medium">
             <button
               onClick={() => setIsAnnual(false)}
-              className={`rounded-full px-4 py-1.5 transition-all ${
+              className={`rounded-full px-4 py-1.5 transition-colors cursor-pointer ${
                 !isAnnual
-                  ? "bg-white text-slate-900 shadow-xs border border-emerald-100/50"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#2a2a2a] text-white shadow-xs border border-[#4a4a4a]"
+                  : "text-[#9ca3af] hover:text-white"
               }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setIsAnnual(true)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 transition-all ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 transition-colors cursor-pointer ${
                 isAnnual
-                  ? "bg-white text-slate-900 shadow-xs border border-emerald-100/50"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-[#2a2a2a] text-white shadow-xs border border-[#4a4a4a]"
+                  : "text-[#9ca3af] hover:text-white"
               }`}
             >
               Billed annually
-              <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-[#2d5218]">
+              <span className="rounded-full bg-[#10b981]/20 px-1.5 py-0.5 text-[9px] font-bold text-[#34d399] border border-[#10b981]/30">
                 -20%
               </span>
             </button>
@@ -75,66 +75,66 @@ const Pricing = () => {
         {/* Plan Cards Grid */}
         <div className="grid gap-6 md:grid-cols-2 md:gap-8">
           {/* Free Tier Card */}
-          <div className="glass-panel flex flex-col justify-between rounded-3xl p-6 sm:p-8">
+          <div className="flex flex-col justify-between rounded-2xl bg-[#242424] border border-[#383838] p-6 sm:p-8 shadow-xl text-white">
             <div>
               <div className="mb-4">
-                <h2 className="text-xl font-bold text-slate-900">Free</h2>
+                <h2 className="text-xl font-bold text-white">Free</h2>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-slate-900">$0</span>
+                  <span className="text-4xl font-extrabold text-white">$0</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-400">Always free for personal use</p>
+                <p className="mt-1 text-xs text-[#9ca3af]">Always free for personal use</p>
               </div>
 
               {/* Feature Checklist */}
-              <div className="my-6 space-y-3 border-t border-emerald-100/60 pt-6">
+              <div className="my-6 space-y-3 border-t border-[#383838] pt-6">
                 {freeFeatures.map((feature) => (
                   <div key={feature} className="flex items-center gap-3">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#2a2a2a] border border-[#383838] text-[#9ca3af]">
                       <Check className="h-3 w-3" />
                     </div>
-                    <span className="text-xs font-medium text-slate-600 sm:text-sm">{feature}</span>
+                    <span className="text-xs font-medium text-[#d1d5db] sm:text-sm">{feature}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Bottom CTA */}
-            <button className="w-full rounded-full bg-slate-900 py-3 text-xs font-semibold text-white shadow-xs transition-all hover:bg-slate-800 active:scale-95 sm:text-sm">
-              Switch to this plan
+            <button className="w-full rounded-full bg-[#2a2a2a] hover:bg-[#333333] border border-[#383838] py-2.5 text-xs font-medium text-white transition-colors cursor-pointer sm:text-sm">
+              Current Plan
             </button>
           </div>
 
           {/* Premium Tier Card */}
-          <div className="glass-panel relative flex flex-col justify-between rounded-3xl p-6 sm:p-8 ring-2 ring-emerald-500/30">
+          <div className="relative flex flex-col justify-between rounded-2xl bg-[#282a2d] border-2 border-[#10b981] p-6 sm:p-8 text-white shadow-xl">
             {/* Active Badge */}
             <div className="absolute right-6 top-6">
-              <span className="rounded-full bg-[#142417] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                Active
+              <span className="rounded-full bg-[#10b981] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-950">
+                Popular
               </span>
             </div>
 
             <div>
               <div className="mb-4">
-                <h2 className="text-xl font-bold text-slate-900">Premium</h2>
+                <h2 className="text-xl font-bold text-white">Premium</h2>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-slate-900">
+                  <span className="text-4xl font-extrabold text-white">
                     {isAnnual ? "$6.40" : "$8"}
                   </span>
-                  <span className="text-xs text-slate-400">/month</span>
+                  <span className="text-xs text-[#9ca3af]">/month</span>
                 </div>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-[#9ca3af]">
                   {isAnnual ? "Billed annually ($76.80/yr)" : "Billed monthly"}
                 </p>
               </div>
 
               {/* Feature Checklist */}
-              <div className="my-6 space-y-3 border-t border-emerald-100/60 pt-6">
+              <div className="my-6 space-y-3 border-t border-[#383838] pt-6">
                 {premiumFeatures.map((feature) => (
                   <div key={feature} className="flex items-center gap-3">
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[#4d7c0f]">
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#10b981]/20 border border-[#10b981]/40 text-[#34d399]">
                       <Check className="h-3 w-3" />
                     </div>
-                    <span className="text-xs font-medium text-slate-700 sm:text-sm">{feature}</span>
+                    <span className="text-xs font-medium text-[#f3f4f6] sm:text-sm">{feature}</span>
                   </div>
                 ))}
               </div>
@@ -145,9 +145,9 @@ const Pricing = () => {
               <button
                 type="button"
                 onClick={() => setIsPaymentModalOpen(true)}
-                className="w-full flex items-center justify-center gap-2 rounded-full bg-[#3f6212] hover:bg-[#365314] py-3 text-xs font-bold text-white shadow-md shadow-[#3f6212]/20 transition-all hover:shadow-lg active:scale-95 sm:text-sm cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-[#10b981] hover:bg-[#059669] py-3 text-xs font-medium text-white shadow-md active:scale-95 transition-all sm:text-sm cursor-pointer"
               >
-                <QrCode className="h-4 w-4 text-lime-300" />
+                <QrCode className="h-4 w-4" />
                 <span>Pay with QR Code (Instant Upgrade)</span>
               </button>
             </div>
