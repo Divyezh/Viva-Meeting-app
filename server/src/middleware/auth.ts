@@ -22,7 +22,7 @@ export const requireAuth = async (
       if (process.env.NODE_ENV !== "production") {
         req.user = {
           id: (req.headers["x-user-id"] as string) || "user_1",
-          email: "divyesh@viva.app",
+          email: "Email Address",
           fullName: "Divyesh Soni",
           plan: "free",
         };

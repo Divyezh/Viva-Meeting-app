@@ -390,7 +390,7 @@ const PrivacyPolicy = () => {
                   </p>
                   <ul className="list-disc list-inside mt-1.5 text-xs text-[#d1d5db] space-y-1">
                     <li>Delete your account directly via the user profile controls; or</li>
-                    <li>Submit an email request to our Grievance Redressal Officer at <code className="bg-[#2a2a2a] px-1.5 py-0.5 rounded text-[#f3f4f6]">privacy@viva-app.in</code> with the subject &quot;Withdrawal of Consent - DPDP Act 2023&quot;.</li>
+                    <li>Submit an email request to our Grievance Redressal Officer at <code className="bg-[#2a2a2a] px-1.5 py-0.5 rounded text-[#f3f4f6]">sonidivyesh2004@gmail.com</code> with the subject &quot;Withdrawal of Consent - DPDP Act 2023&quot;.</li>
                   </ul>
                 </div>
               </div>
@@ -589,8 +589,8 @@ const PrivacyPolicy = () => {
                     </div>
                     <div>
                       <span className="text-[#9ca3af] block text-[10px] uppercase font-bold">Official Email</span>
-                      <a href="mailto:grievance@viva-app.in" className="text-[#34d399] hover:underline flex items-center gap-1">
-                        <Mail className="h-3 w-3" /> grievance@viva-app.in
+                      <a href="mailto:sonidivyesh2004@gmail.com" className="text-[#34d399] hover:underline flex items-center gap-1">
+                        <Mail className="h-3 w-3" /> sonidivyesh2004@gmail.com
                       </a>
                     </div>
                     <div>

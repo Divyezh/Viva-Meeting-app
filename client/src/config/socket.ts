@@ -5,24 +5,27 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://viva-meeting-app.
 export const socket = io(SOCKET_URL, {
   autoConnect: false,
   withCredentials: true,
-  transports: ["websocket", "polling"],
+  transports: ["polling", "websocket"],
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 500,
   reconnectionDelayMax: 2000,
-  timeout: 30000,
+  timeout: 10000,
 });
 
 socket.on("connect", () => {
-  console.log(`[Socket Connected] Successfully connected to signaling server (${socket.id})`);
+  const ts = new Date().toISOString();
+  console.log(`[Join Latency Trace][${ts}] [Socket Connected] (${socket.id}) via transport: ${socket.io.engine?.transport?.name}`);
 });
 
 socket.on("disconnect", (reason) => {
-  console.warn(`[Socket Disconnected] Disconnected from signaling server. Reason: "${reason}"`);
+  const ts = new Date().toISOString();
+  console.warn(`[Join Latency Trace][${ts}] [Socket Disconnected] Reason: "${reason}"`);
 });
 
 socket.on("connect_error", (err) => {
-  console.error(`[Socket Connect Error] Failed to connect to signaling server:`, err.message);
+  const ts = new Date().toISOString();
+  console.error(`[Join Latency Trace][${ts}] [Socket Connect Error] Failed to connect:`, err.message);
 });
 
 export default socket;

@@ -16,7 +16,8 @@ import toast, { Toaster } from "react-hot-toast";
 import BrandLogo from "../components/brand_logo";
 import usePageSEO from "../hooks/usePageSEO";
 import { useUser } from "@clerk/clerk-react";
-import { extractRoomId, prepareGuestJoin } from "../utils/meetingJoin";
+import socket from "../config/socket";
+import { extractRoomId, prepareGuestJoin, joinMeeting, logJoinTrace } from "../utils/meetingJoin";
 
 const JoinPage = () => {
   const { meetingId: urlMeetingId } = useParams<{ meetingId?: string }>();
@@ -31,6 +32,15 @@ const JoinPage = () => {
     description: "Join a video meeting instantly with meeting ID or invite link without signing in.",
     canonicalPath: "/join",
   });
+
+  // Pre-warm socket connection immediately when JoinPage loads
+  useEffect(() => {
+    logJoinTrace("JoinPage mounted", { queryRoomId });
+    if (!socket.connected) {
+      logJoinTrace("JoinPage pre-warming socket connection");
+      socket.connect();
+    }
+  }, [queryRoomId]);
 
   const [meetingCode, setMeetingCode] = useState(queryRoomId);
   const [userName, setUserName] = useState(() => {
@@ -127,13 +137,7 @@ const JoinPage = () => {
     }
 
     setIsJoining(true);
-
-    prepareGuestJoin({
-      roomId: cleanId,
-      userName,
-      muted: isMicMuted,
-      cameraOff: isCameraOff,
-    });
+    logJoinTrace("JoinPage form submitted", { cleanId, userName });
 
     // Stop local preview tracks before entering room
     if (mediaStream) {
@@ -144,9 +148,13 @@ const JoinPage = () => {
       iconTheme: { primary: "#10b981", secondary: "#ffffff" },
     });
 
-    setTimeout(() => {
-      navigate(`/meeting/${cleanId}`);
-    }, 160);
+    joinMeeting({
+      roomId: cleanId,
+      userName,
+      muted: isMicMuted,
+      cameraOff: isCameraOff,
+      navigate,
+    });
   };
 
   return (

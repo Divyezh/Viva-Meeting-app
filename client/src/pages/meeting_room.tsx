@@ -33,7 +33,7 @@ import soundEffects from "../utils/soundEffects";
 import { useUser } from "@clerk/clerk-react";
 import usePageSEO from "../hooks/usePageSEO";
 import BrandLogo from "../components/brand_logo";
-import { prepareGuestJoin } from "../utils/meetingJoin";
+import { prepareGuestJoin, joinMeeting, logJoinTrace } from "../utils/meetingJoin";
 import ConnectingScreen from "../components/meeting/connecting_screen";
 
 interface JoinRequest {
@@ -369,6 +369,15 @@ const MeetingRoom = () => {
     enabled: !inLobby && admissionStatus === "admitted",
   });
 
+  // Pre-warm socket on component mount so signaling connection is ready immediately
+  useEffect(() => {
+    logJoinTrace("MeetingRoom mounted", { cleanRoomId, isHost, inLobby });
+    if (!socket.connected) {
+      logJoinTrace("MeetingRoom pre-warming socket connection");
+      socket.connect();
+    }
+  }, [cleanRoomId, isHost]);
+
   const handleReturnHome = useCallback(() => {
     if (user) {
       navigate("/");
@@ -380,18 +389,21 @@ const MeetingRoom = () => {
   const handleLobbyJoin = (e: React.FormEvent) => {
     e.preventDefault();
     const finalName = lobbyName.trim() || (user?.fullName || user?.firstName || "Guest");
-    prepareGuestJoin({
+    logJoinTrace("User clicked Ask to Join in in-room lobby", { cleanRoomId, finalName });
+
+    joinMeeting({
       roomId: cleanRoomId,
       userName: finalName,
       muted: lobbyMicMuted,
       cameraOff: lobbyCameraOff,
+      onSuccess: () => {
+        if (lobbyStream) {
+          lobbyStream.getTracks().forEach((t) => t.stop());
+          setLobbyStream(null);
+        }
+        setInLobby(false);
+      },
     });
-
-    if (lobbyStream) {
-      lobbyStream.getTracks().forEach((t) => t.stop());
-      setLobbyStream(null);
-    }
-    setInLobby(false);
   };
 
   // Host Action: Admit Guest with smooth exit animation
@@ -496,13 +508,14 @@ const MeetingRoom = () => {
   });
 
   // ─── Socket Signaling for Admission & Knock Flow ────────────
-  // Runs once per (room, role) after the lobby and Clerk are ready. A guest sends exactly ONE
+  // Runs once per (room, role) after lobby confirmation. A guest sends exactly ONE
   // "request-join" per socket connection; the server keeps it queued and forwards it to the host
   // whenever the host (re)connects, so no client-side retry loop is needed.
   useEffect(() => {
-    if (inLobby || !isUserLoaded) return;
+    if (inLobby) return;
 
     if (!socket.connected) {
+      logJoinTrace("Admission effect initiating socket.connect", { cleanRoomId, isHost });
       socket.connect();
     }
 
@@ -523,7 +536,12 @@ const MeetingRoom = () => {
       const registerHost = () => {
         const { currentUserId: uid, currentUserName: name, currentUserAvatar: avatar } =
           identityRef.current;
-        console.log(`[Admission] Host registering for room ${cleanRoomId} (socket ${socket.id})`);
+        logJoinTrace("Host registering on signaling server for room", {
+          cleanRoomId,
+          userId: uid,
+          userName: name,
+          socketId: socket.id,
+        });
         socket.emit("request-join", {
           roomId: cleanRoomId,
           userId: uid,
@@ -537,9 +555,11 @@ const MeetingRoom = () => {
       socket.on("connect", registerHost);
 
       const handleJoinRequestReceived = (request: Omit<JoinRequest, "createdAt">) => {
-        console.log(
-          `[Admission] Host received join request from ${request.userName} (${request.requesterSocketId})`
-        );
+        logJoinTrace("Host received join-request-received admit notification", {
+          guestName: request.userName,
+          requesterSocketId: request.requesterSocketId,
+          roomId: request.roomId,
+        });
         const alreadyShown = joinRequestsRef.current.some(
           (r) =>
             r.requesterSocketId === request.requesterSocketId ||
@@ -575,7 +595,7 @@ const MeetingRoom = () => {
         requesterSocketId: string;
         userId: string;
       }) => {
-        console.log(`[Admission] Join request cancelled (${requesterSocketId})`);
+        logJoinTrace("Host received join-request-cancelled", { requesterSocketId, userId });
         setJoinRequests((prev) =>
           prev.filter(
             (r) =>
@@ -601,7 +621,12 @@ const MeetingRoom = () => {
       if (admissionStatusRef.current !== "waiting") return;
       const { currentUserId: uid, currentUserName: name, currentUserAvatar: avatar } =
         identityRef.current;
-      console.log(`[Admission] Guest emitting request-join for ${cleanRoomId} (socket ${socket.id})`);
+      logJoinTrace("Guest emitting request-join event to signaling server", {
+        cleanRoomId,
+        userId: uid,
+        userName: name,
+        socketId: socket.id,
+      });
       socket.emit("request-join", {
         roomId: cleanRoomId,
         userId: uid,
@@ -626,7 +651,7 @@ const MeetingRoom = () => {
       waitingForHost?: boolean;
       reason?: string;
     }) => {
-      console.log("[Admission] Guest received join-response:", {
+      logJoinTrace("Guest received join-response from server", {
         approved,
         meetingClosed,
         waitingForHost,
@@ -660,12 +685,18 @@ const MeetingRoom = () => {
       socket.off("meeting-ended-by-host", handleMeetingEnded);
       socket.off("join-response", handleJoinResponse);
       socket.off("connect", sendJoinRequest);
-      // Guest left the waiting room (navigated away): withdraw the pending knock on the server
+    };
+  }, [cleanRoomId, isHost, inLobby]);
+
+  // Unmount-only safety effect: withdraw knock strictly when navigating away from the page
+  useEffect(() => {
+    return () => {
       if (admissionStatusRef.current === "waiting") {
+        logJoinTrace("Guest unmounted while waiting: withdrawing knock from server queue", { cleanRoomId });
         socket.emit("leave-room");
       }
     };
-  }, [cleanRoomId, isHost, inLobby, isUserLoaded]);
+  }, [cleanRoomId]);
 
   // Dynamic participants list formed by local user + all connected peers (strictly deduplicated)
   const participantsList: ParticipantItem[] = useMemo(() => {

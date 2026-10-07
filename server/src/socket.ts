@@ -61,7 +61,7 @@ export const setupSocket = (server: HttpServer): Server => {
       methods: ["GET", "POST"],
       credentials: true,
     },
-    transports: ["websocket", "polling"],
+    transports: ["polling", "websocket"],
     pingTimeout: 30000,
     pingInterval: 25000,
   });
@@ -286,8 +286,8 @@ export const setupSocket = (server: HttpServer): Server => {
         const isDuplicateKnock = roomPending.has(socket.id);
         roomPending.set(socket.id, reqItem);
         console.log(
-          `[Admission] request-join from "${userName}" (${socket.id}) for "${roomId}"${
-            isDuplicateKnock ? " [duplicate - already pending]" : ""
+          `[${new Date().toISOString()}] [Server Admission Trace] request-join received from "${userName}" (${socket.id}) for "${roomId}"${
+            isDuplicateKnock ? " [already pending in queue]" : ""
           }`
         );
 
@@ -310,7 +310,7 @@ export const setupSocket = (server: HttpServer): Server => {
         // If host has not yet entered the room or socket is connecting, keep guest in waiting room
         if (!host || !io.sockets.sockets.has(host.socketId)) {
           console.log(
-            `[Waiting Room] Guest "${userName}" (${socket.id}) waiting for host in room "${roomId}"`
+            `[${new Date().toISOString()}] [Server Admission Trace] Guest "${userName}" (${socket.id}) queued: waiting for host in room "${roomId}"`
           );
           socket.emit("join-response", {
             approved: false,
@@ -333,9 +333,10 @@ export const setupSocket = (server: HttpServer): Server => {
           return;
         }
 
-        // Host is present: forward admission request to the host (once per guest socket)
-        if (isDuplicateKnock) return;
-        console.log(`[Admission] Forwarding "${userName}" (${socket.id}) -> Host (${host.socketId})`);
+        // Host is present: forward admission request directly to the host immediately
+        console.log(
+          `[${new Date().toISOString()}] [Server Admission Trace] Forwarding knock "${userName}" (${socket.id}) -> Host (${host.socketId})`
+        );
         io.to(host.socketId).emit("join-request-received", reqItem);
       }
     );

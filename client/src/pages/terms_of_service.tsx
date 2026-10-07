@@ -163,17 +163,15 @@ const TermsOfService = () => {
                   <button
                     key={s.id}
                     onClick={() => scrollToSection(s.id)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-between group cursor-pointer ${
-                      activeSection === s.id
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-between group cursor-pointer ${activeSection === s.id
                         ? "bg-[#10b981] text-white font-semibold shadow-xs"
                         : "text-[#9ca3af] hover:bg-[#2a2a2a] hover:text-[#f3f4f6]"
-                    }`}
+                      }`}
                   >
                     <span className="truncate">{s.title}</span>
                     <ChevronRight
-                      className={`h-3 w-3 shrink-0 transition-transform ${
-                        activeSection === s.id ? "text-white" : "text-[#9ca3af] group-hover:translate-x-0.5"
-                      }`}
+                      className={`h-3 w-3 shrink-0 transition-transform ${activeSection === s.id ? "text-white" : "text-[#9ca3af] group-hover:translate-x-0.5"
+                        }`}
                     />
                   </button>
                 ))}
@@ -514,8 +512,8 @@ const TermsOfService = () => {
                     </div>
                     <div>
                       <span className="text-[#9ca3af] block text-[10px] uppercase font-bold">Email</span>
-                      <a href="mailto:grievance@viva-app.in" className="text-[#34d399] hover:underline flex items-center gap-1">
-                        <Mail className="h-3 w-3" /> grievance@viva-app.in
+                      <a href="mailto:sonidivyesh2004@gmail.com" className="text-[#34d399] hover:underline flex items-center gap-1">
+                        <Mail className="h-3 w-3" /> sonidivyesh2004@gmail.com
                       </a>
                     </div>
                     <div>

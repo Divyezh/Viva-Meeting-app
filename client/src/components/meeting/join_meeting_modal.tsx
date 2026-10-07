@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, User, Keyboard, Mic, MicOff, Video, VideoOff, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import BrandLogo from "../brand_logo";
-import { extractRoomId, prepareGuestJoin } from "../../utils/meetingJoin";
+import socket from "../../config/socket";
+import { extractRoomId, prepareGuestJoin, joinMeeting, logJoinTrace } from "../../utils/meetingJoin";
 
 interface JoinMeetingModalProps {
   isOpen: boolean;
@@ -26,6 +27,17 @@ const JoinMeetingModal = ({
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
 
+  // Pre-warm socket connection as soon as Join modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      logJoinTrace("JoinMeetingModal opened", { initialMeetingId });
+      if (!socket.connected) {
+        logJoinTrace("JoinMeetingModal pre-warming socket connection");
+        socket.connect();
+      }
+    }
+  }, [isOpen, initialMeetingId]);
+
   if (!isOpen) return null;
 
   const handleJoin = (e: React.FormEvent) => {
@@ -43,13 +55,7 @@ const JoinMeetingModal = ({
     }
 
     setIsJoining(true);
-
-    prepareGuestJoin({
-      roomId: cleanId,
-      userName,
-      muted: isMicMuted,
-      cameraOff: isCameraOff,
-    });
+    logJoinTrace("JoinMeetingModal submitted", { cleanId, userName });
 
     toast.success("Connecting to meeting room...", {
       style: {
@@ -59,10 +65,14 @@ const JoinMeetingModal = ({
       },
     });
 
-    setTimeout(() => {
-      onClose();
-      navigate(`/meeting/${cleanId}`);
-    }, 160);
+    joinMeeting({
+      roomId: cleanId,
+      userName,
+      muted: isMicMuted,
+      cameraOff: isCameraOff,
+      navigate,
+      onClose,
+    });
   };
 
   return (
