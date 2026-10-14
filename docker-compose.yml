@@ -1,0 +1,104 @@
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: viva-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-viva_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-viva_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: development
+    container_name: viva-server
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      PORT: ${PORT:-5000}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-viva_db}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      CLERK_WEBHOOK_SECRET: ${CLERK_WEBHOOK_SECRET:-}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+    volumes:
+      - ./server/src:/app/src
+      - ./server/package.json:/app/package.json
+      - ./server/tsconfig.json:/app/tsconfig.json
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    image: node:20-alpine
+    container_name: viva-client
+    working_dir: /app
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5000}
+      VITE_SOCKET_URL: ${VITE_SOCKET_URL:-http://localhost:5000}
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - server
+
+# ==============================================================================
+# OPTIONAL: COTURN (TURN RELAY SERVER) NOTE
+# ==============================================================================
+# WebRTC uses STUN for direct peer-to-peer connection discovery behind NAT. However,
+# symmetric NATs and strict corporate firewalls block direct P2P connections,
+# requiring a TURN relay server (coturn) to relay encrypted media packets.
+#
+# WHY IT CANNOT RUN ON VERCEL OR RENDER:
+# - Vercel is a serverless frontend edge network; it cannot bind raw UDP/TCP ports.
+# - Render Web Services run behind an HTTP/HTTPS reverse proxy and do not support
+#   exposing the wide dynamic UDP port ranges (e.g. 49152-65535) required by TURN.
+# - Running coturn requires a dedicated Linux VPS (e.g. AWS EC2, DigitalOcean,
+#   Hetzner) with a static PUBLIC IPv4 address, listening on port 3478 (UDP/TCP)
+#   and relaying over dynamic UDP ports.
+#
+# Reference configuration if deploying on an external VPS with Docker:
+#
+#  coturn:
+#    image: coturn/coturn:latest
+#    container_name: viva-turn
+#    restart: unless-stopped
+#    network_mode: host
+#    environment:
+#      - TURN_PORT=3478
+#      - TURN_ALT_PORT=3479
+#    command:
+#      - -n
+#      - --log-file=stdout
+#      - --listening-port=3478
+#      - --tls-listening-port=5349
+#      - --min-port=49152
+#      - --max-port=65535
+#      - --realm=viva.yourdomain.com
+#      - --user=viva_user:viva_turn_secret_pass
+#      - --fingerprint
+#      - --lt-cred-mech
+
+volumes:
+  pgdata:

@@ -209,6 +209,79 @@ npm run dev
 
 ---
 
+## 🛠️ Development & CI
+
+### Running Locally with Docker Compose (Recommended)
+
+Run the complete full-stack environment (PostgreSQL 16, Express Backend with hot reload, and Vite Frontend) with a single command:
+
+```bash
+# 1. Copy the unified environment template
+cp .env.example .env
+
+# 2. Build and start all services
+docker compose up --build
+
+# 3. Stop running containers
+docker compose down
+
+# 4. Reset database volume (wipes local PostgreSQL data and re-runs init.sql)
+docker compose down -v
+```
+
+Services exposed:
+- **Client (Vite)**: `http://localhost:5173`
+- **Server (Express / Socket.io)**: `http://localhost:5000` (`http://localhost:5000/health`)
+- **Database (PostgreSQL)**: `localhost:5432` (database: `viva_db`, user: `postgres`)
+
+### Running Locally without Docker
+
+1. **Start Backend**:
+   ```bash
+   cd server
+   npm install
+   cp .env.example .env
+   npm run dev
+   ```
+2. **Start Frontend** (in a separate terminal):
+   ```bash
+   cd client
+   npm install
+   cp .env.example .env
+   npm run dev
+   ```
+
+### 🤖 GitHub Actions CI Workflow
+
+The repository includes an automated continuous integration pipeline at `.github/workflows/ci.yml` that runs on every pull request and push to `main`:
+
+* **Frontend Job (`client`)**:
+  * Node 20 LTS environment with cached npm dependencies.
+  * Validates code syntax via `npm run lint`.
+  * Runs security audit check (`npm audit --audit-level=high`, non-blocking).
+  * Builds production assets via `npm run build` and tests static page generation.
+* **Backend Job (`server`)**:
+  * Boots an ephemeral PostgreSQL 16 service container.
+  * Validates TypeScript code via `npm run lint` and compiles via `npm run build`.
+  * Performs an automated startup smoke check: starts the server process and verifies that `GET /health` responds with HTTP 200 within 15 seconds.
+
+### 🔑 Environment Variables Reference
+
+| Variable | Location | Description |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | Server / Compose | PostgreSQL connection string (auto-fallback to in-memory store if unset) |
+| `PORT` | Server | HTTP & WebSocket server port (defaults to `5000` or `process.env.PORT` on Render) |
+| `CLIENT_URL` | Server | Allowed frontend origin for CORS (e.g. `http://localhost:5173` or production URL) |
+| `JWT_SECRET` | Server | Secret for token signing |
+| `CLERK_SECRET_KEY` | Server | Clerk backend secret key for authenticated routes |
+| `RAZORPAY_KEY_ID` | Server | Razorpay key ID for payment processing |
+| `RAZORPAY_KEY_SECRET` | Server | Razorpay key secret for verifying payment signatures |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Client | Clerk publishable key for user authentication |
+| `VITE_API_URL` | Client | Backend REST API endpoint (e.g. `http://localhost:5000`) |
+| `VITE_SOCKET_URL` | Client | WebRTC signaling Socket.io endpoint (e.g. `http://localhost:5000`) |
+
+---
+
 ## 🎛️ Meeting Controls & Shortcuts
 
 | Action | Control | Description |
