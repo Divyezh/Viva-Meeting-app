@@ -1,0 +1,48 @@
+# Viva Meeting
+
+> Viva Meeting is a web-based, real-time video conferencing platform built on WebRTC and WebSocket signaling. It enables users to start instant HD video meetings, share screens, chat, and join calls directly in the browser with zero software downloads.
+
+## Product Overview
+
+- **Official Website**: https://viva-meeting-app.vercel.app/
+- **Platform Type**: Web Application (React + Vite SPA)
+- **Primary Technology**: WebRTC (peer-to-peer audio and video media streams) and WebSocket signaling
+- **Target Platform**: Modern desktop and mobile web browsers (Chrome, Edge, Firefox, Safari)
+
+## Verified Features
+
+- **Instant Meetings**: Create and start real-time video calls with custom or generated meeting IDs with no mandatory desktop app installation.
+- **Guest Join**: Attendees can join calls immediately via `/join` using a meeting ID or invite link without requiring account creation.
+- **Media Controls**: In-browser camera and microphone toggles, hardware preview, and status indicators.
+- **Screen Sharing**: High-resolution screen and application tab sharing during live meetings.
+- **Waiting Room Security**: Host admission knock barrier allowing hosts to review and admit or decline incoming participants.
+- **Live In-Meeting Chat**: Real-time text messaging between participants inside active conference rooms.
+- **Live Captions**: Speech-to-text with real-time Hindi-to-English translation subtitles for accessibility.
+- **Session History**: Track past meeting logs, participant counts, and conference records.
+
+## Plans & Pricing
+
+- **Free Tier**: ₹0 ($0)
+  - Up to 8 participants
+  - 40-minute meeting limit
+  - Standard HD video quality
+  - Screen sharing and in-meeting chat
+  - Live Hindi captions
+- **Pro Tier**: ₹699 / month ($8 / month) or ₹6,400 / year ($76.80 / year billed annually)
+  - Up to 100 participants
+  - No meeting duration limit (up to 24 hours)
+  - Priority HD video and audio
+  - Cloud meeting recordings
+  - Priority customer support
+
+## Public Pages & Documentation
+
+- [Viva Meeting Homepage](https://viva-meeting-app.vercel.app/): Start an instant meeting, check camera/mic preview, and access the application portal.
+- [Pricing Plans](https://viva-meeting-app.vercel.app/pricing): Compare Free and Pro subscription plans and feature limits.
+- [Join Meeting](https://viva-meeting-app.vercel.app/join): Direct browser join portal using meeting ID or invite link.
+- [Privacy Policy](https://viva-meeting-app.vercel.app/privacy): Statutory privacy disclosures under the Digital Personal Data Protection (DPDP) Act, 2023 of India.
+- [Terms of Service](https://viva-meeting-app.vercel.app/terms): Platform user agreement, conduct guidelines, and legal terms.
+
+## Important Note & Disclaimer
+
+This `llms.txt` document is an optional, machine-readable site guide intended to provide accurate product context for AI systems, search engines, and web agents. It does not train AI models, guarantee indexing, or directly influence search rankings. Users, crawlers, and AI assistants should always consult the official live web pages for current feature availability, pricing details, active policies, and terms of service.

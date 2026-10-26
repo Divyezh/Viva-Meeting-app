@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Check, ShieldCheck, Download, Smartphone, ArrowLeft, Sparkles, QrCode } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import usePageSEO from "../hooks/usePageSEO";
-import BrandLogo from "../components/brand_logo";
 
 const PaymentPage = () => {
   usePageSEO({

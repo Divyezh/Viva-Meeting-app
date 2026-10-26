@@ -1,41 +1,82 @@
 # Robots.txt for Viva Meeting (https://viva-meeting-app.vercel.app/)
+# Directives for search crawlers, AI search bots, and indexing agents
 
+# -----------------------------------------------------------------------------
+# Default Crawler Policy
+# -----------------------------------------------------------------------------
 User-agent: *
 Allow: /
 Allow: /pricing
 Allow: /join
-Allow: /payment
-Allow: /sessions
-Allow: /login
-Allow: /signup
 Allow: /privacy
 Allow: /terms
 
-# Protect private encrypted video meeting rooms from crawler discovery
-Disallow: /meeting/*
+# Disallow private, session-specific, and authenticated areas
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
 
-# Prevent crawler confusion by disallowing duplicate internal aliases
+# Disallow internal redirect aliases to prevent duplicate URL discovery
 Disallow: /dashboard
 Disallow: /pay
 Disallow: /privacy-policy
 Disallow: /terms-of-service
 
+# -----------------------------------------------------------------------------
+# OpenAI Search Discovery Bot (ChatGPT Search)
+# Explicitly allowed to enable real-time search discovery, summaries, and citations
+# -----------------------------------------------------------------------------
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# OpenAI Foundation Model Training Crawler (GPTBot)
+# Note: Distinct from OAI-SearchBot. Governs general AI model training crawls.
+# -----------------------------------------------------------------------------
+User-agent: GPTBot
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Google Search Crawler
+# -----------------------------------------------------------------------------
 User-agent: Googlebot
 Allow: /
 Allow: /pricing
 Allow: /join
-Allow: /payment
-Allow: /sessions
-Allow: /login
-Allow: /signup
 Allow: /privacy
 Allow: /terms
-Disallow: /meeting/*
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
 Disallow: /dashboard
 Disallow: /pay
 Disallow: /privacy-policy
 Disallow: /terms-of-service
 
+# -----------------------------------------------------------------------------
 # Host and Sitemap Directives
+# -----------------------------------------------------------------------------
 Host: https://viva-meeting-app.vercel.app
 Sitemap: https://viva-meeting-app.vercel.app/sitemap.xml

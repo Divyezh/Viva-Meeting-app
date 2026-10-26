@@ -15,6 +15,7 @@ const Sessions = () => {
     description:
       "Review your past video conference sessions, participant logs, and chat notes on Viva Meeting.",
     canonicalPath: "/sessions",
+    noIndex: true,
   });
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);

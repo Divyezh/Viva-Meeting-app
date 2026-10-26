@@ -214,6 +214,7 @@ const pages = [
     keywords:
       "Viva Meeting history, past video meetings, conference logs, meeting sessions Viva",
     canonical: `${BASE_URL}/sessions`,
+    noIndex: true,
     heading: "Meeting History & Past Sessions",
     subheading: "Access logs, participant details, and records of your past conferences.",
     schemaType: "WebPage",
@@ -247,6 +248,7 @@ const pages = [
       "Sign in to your Viva Meeting account to start, host, schedule, and join secure encrypted video conferences.",
     keywords: "Viva Meeting sign in, login Viva meeting, access video calls",
     canonical: `${BASE_URL}/login`,
+    noIndex: true,
     heading: "Sign In to Viva Meeting",
     subheading: "Access your dashboard, host meetings, and manage recordings.",
     schemaType: "WebPage",
@@ -271,6 +273,7 @@ const pages = [
       "Create your free Viva Meeting account. Host instant HD video conferences with screen sharing and encrypted waiting rooms.",
     keywords: "create Viva meeting account, register video conference, free meeting signup",
     canonical: `${BASE_URL}/signup`,
+    noIndex: true,
     heading: "Create Your Free Account",
     subheading: "Get started with Viva Meeting in seconds.",
     schemaType: "WebPage",
@@ -441,6 +444,14 @@ for (const page of pages) {
     /<meta\s+name="twitter:url"\s+content=".*?"\s*\/?>/i,
     `<meta name="twitter:url" content="${page.canonical}" />`
   );
+
+  // 6b. Replace Robots Tag if noIndex
+  if (page.noIndex) {
+    html = html.replace(
+      /<meta\s+name="robots"\s+content=".*?"\s*\/?>/i,
+      `<meta name="robots" content="noindex, nofollow" />`
+    );
+  }
 
   // 7. Inject Breadcrumbs JSON-LD schema before </head>
   const breadcrumbsSchema = JSON.stringify(getBreadcrumbsSchema(page.breadcrumbs));

@@ -7,16 +7,17 @@ import usePageSEO from "../hooks/usePageSEO";
 const Login = () => {
   const { isSignedIn } = useAuth();
 
-  // If already signed in, redirect straight to dashboard
-  if (isSignedIn) {
-    return <Navigate to="/" replace />;
-  }
-
   usePageSEO({
     title: "Sign In - Viva Meeting",
     description: "Sign in to Viva Meeting to start instant encrypted video calls, manage meetings, and collaborate seamlessly.",
     canonicalPath: "/login",
+    noIndex: true,
   });
+
+  // If already signed in, redirect straight to dashboard
+  if (isSignedIn) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4 py-12 bg-[#1a1a1a] text-[#f3f4f6]">
