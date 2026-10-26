@@ -1,5 +1,5 @@
 # Robots.txt for Viva Meeting (https://viva-meeting-app.vercel.app/)
-# Directives for search crawlers, AI search bots, and indexing agents
+# Directives for search crawlers, AI search bots, LLM agents, and indexing services
 
 # -----------------------------------------------------------------------------
 # Default Crawler Policy
@@ -23,27 +23,10 @@ Disallow: /privacy-policy
 Disallow: /terms-of-service
 
 # -----------------------------------------------------------------------------
-# OpenAI Search Discovery Bot (ChatGPT Search)
-# Explicitly allowed to enable real-time search discovery, summaries, and citations
+# OpenAI Bots (ChatGPT Search, User Browsing, and GPTBot)
 # -----------------------------------------------------------------------------
 User-agent: OAI-SearchBot
-Allow: /
-Allow: /pricing
-Allow: /join
-Allow: /privacy
-Allow: /terms
-Disallow: /meeting/
-Disallow: /sessions
-Disallow: /api/
-Disallow: /dashboard
-Disallow: /pay
-Disallow: /privacy-policy
-Disallow: /terms-of-service
-
-# -----------------------------------------------------------------------------
-# OpenAI Foundation Model Training Crawler (GPTBot)
-# Note: Distinct from OAI-SearchBot. Governs general AI model training crawls.
-# -----------------------------------------------------------------------------
+User-agent: ChatGPT-User
 User-agent: GPTBot
 Allow: /
 Allow: /pricing
@@ -59,9 +42,187 @@ Disallow: /privacy-policy
 Disallow: /terms-of-service
 
 # -----------------------------------------------------------------------------
-# Google Search Crawler
+# Anthropic Claude Bots (Claude Search, Live Browsing & Training)
+# -----------------------------------------------------------------------------
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: anthropic-ai
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Google Search & Google Gemini (AI Search & Training)
 # -----------------------------------------------------------------------------
 User-agent: Googlebot
+User-agent: Google-Extended
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Meta AI (Llama, Meta AI Search & Social Indexers)
+# -----------------------------------------------------------------------------
+User-agent: Meta-ExternalAgent
+User-agent: Meta-ExternalFetcher
+User-agent: FacebookBot
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Perplexity AI Search Crawler
+# -----------------------------------------------------------------------------
+User-agent: PerplexityBot
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Alibaba Cloud Qwen AI
+# -----------------------------------------------------------------------------
+User-agent: Qwen-Bot
+User-agent: Alibaba-Bot
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Moonshot AI (Kimi AI Assistant)
+# -----------------------------------------------------------------------------
+User-agent: KimiBot
+User-agent: MoonshotBot
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Mistral AI Crawler
+# -----------------------------------------------------------------------------
+User-agent: MistralAI-Crawler
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Apple Intelligence (Applebot & Applebot-Extended)
+# -----------------------------------------------------------------------------
+User-agent: Applebot
+User-agent: Applebot-Extended
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# ByteDance / Doubao Crawler
+# -----------------------------------------------------------------------------
+User-agent: Bytespider
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Cohere AI
+# -----------------------------------------------------------------------------
+User-agent: cohere-ai
+Allow: /
+Allow: /pricing
+Allow: /join
+Allow: /privacy
+Allow: /terms
+Disallow: /meeting/
+Disallow: /sessions
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /pay
+Disallow: /privacy-policy
+Disallow: /terms-of-service
+
+# -----------------------------------------------------------------------------
+# Microsoft Bing & Copilot
+# -----------------------------------------------------------------------------
+User-agent: Bingbot
 Allow: /
 Allow: /pricing
 Allow: /join
